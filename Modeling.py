@@ -22,10 +22,10 @@ def run_cv(X, y, cat_feature_indices, n_splits=5):
         # LightGBM
         # -------------------------
         lgb_model = lgb.LGBMClassifier(
-            n_estimators=800,
-            learning_rate=0.03,
-            num_leaves=31,
-            max_depth=4,
+            n_estimators=500,
+            learning_rate=0.05,
+            num_leaves=15,
+            max_depth=3,
             min_child_samples=200,
             subsample=0.8,
             colsample_bytree=0.8,
@@ -42,9 +42,9 @@ def run_cv(X, y, cat_feature_indices, n_splits=5):
         # XGBoost
         # -------------------------
         xgb_model = xgb.XGBClassifier(
-            n_estimators=800,
-            learning_rate=0.03,
-            max_depth=5,
+            n_estimators=500,
+            learning_rate=0.05,
+            max_depth=3,
             subsample=0.8,
             colsample_bytree=0.8,
             objective="binary:logistic",
@@ -60,9 +60,9 @@ def run_cv(X, y, cat_feature_indices, n_splits=5):
         # CatBoost
         # -------------------------
         cb_model = CatBoostClassifier(
-            iterations=800,
-            learning_rate=0.03,
-            depth=6,
+            iterations=500,
+            learning_rate=0.05,
+            depth=3,
             loss_function="Logloss",
             eval_metric="AUC",
             random_seed=42,

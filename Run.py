@@ -10,9 +10,7 @@ run_lgbm_cv(X, y)
 from Preprocessing import preprocess
 from Modeling import run_cv
 
-X, y, tree_features, cat_cols_cb, cat_feature_indices = preprocess(
-    "data/train.csv"
-)
+X, y, tree_features, cat_cols_cb, cat_feature_indices = preprocess("train.csv")
 
 run_cv(
     X,
