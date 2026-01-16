@@ -16,7 +16,6 @@ def get_feature_groups(df):
         if c not in binary_cols + categorical_cols + ["id", "target"]
     ]
 
-    # ordinal vs real continuous (cardinality based)
     cardinality = df[continuous_cols].nunique()
     ordinal_cols = cardinality[cardinality <= 30].index.tolist()
     real_cont_cols = cardinality[cardinality > 30].index.tolist()
@@ -39,34 +38,60 @@ def preprocess(path):
     # ---- feature groups
     binary_cols, categorical_cols, ordinal_cols, real_cont_cols = get_feature_groups(df)
 
-    # ---- continuous: missing flag + median impute
+    # -------------------------------------------------
+    # CATBOOST CATEGORICAL SELECTION
+    # -------------------------------------------------
+    cat_cols_cb = []
+    for col in categorical_cols:
+        nunique = df[col].nunique()
+        missing = (df[col] == -1).mean()
+
+        if nunique > 2 and nunique <= 100 and missing < 0.8:
+            cat_cols_cb.append(col)
+
+    # remaining categorical → numeric
+    cat_cols_numeric = list(set(categorical_cols) - set(cat_cols_cb))
+
+    # -------------------------------------------------
+    # CONTINUOUS
+    # -------------------------------------------------
     for col in real_cont_cols:
         if (df[col] == -1).any():
             df[col + "_missing"] = (df[col] == -1).astype(int)
             median_val = df.loc[df[col] != -1, col].median()
             df[col] = df[col].replace(-1, median_val)
 
-    # ---- ordinal: rare class collapse (<1%)
+    # -------------------------------------------------
+    # ORDINAL RARE COLLAPSE
+    # -------------------------------------------------
     for col in ordinal_cols:
         freq = df[col].value_counts(normalize=True)
         rare_classes = freq[freq < 0.01].index
         df[col] = df[col].replace(rare_classes, -1)
 
-    # ---- label encoding
-    for col in ordinal_cols + categorical_cols:
+    # -------------------------------------------------
+    # LABEL ENCODE (ONLY NUMERIC ONES)
+    # -------------------------------------------------
+    for col in ordinal_cols + cat_cols_numeric:
         le = LabelEncoder()
         df[col] = le.fit_transform(df[col].astype(str))
 
-    # ---- final feature set
+    # -------------------------------------------------
+    # FINAL FEATURE SET
+    # -------------------------------------------------
     tree_features = (
         ordinal_cols +
         real_cont_cols +
         binary_cols +
-        categorical_cols +
+        cat_cols_cb +
+        cat_cols_numeric +
         [c for c in df.columns if c.endswith("_missing")]
     )
 
     X = df[tree_features]
     y = df["target"]
 
-    return X, y, tree_features
+    # CatBoost wants indices
+    cat_feature_indices = [X.columns.get_loc(c) for c in cat_cols_cb]
+
+    return X, y, tree_features, cat_cols_cb, cat_feature_indices
