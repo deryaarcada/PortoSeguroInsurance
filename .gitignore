@@ -1,0 +1,15 @@
+# Large data files - do not commit to GitHub
+train.csv
+test.csv
+X_preprocessed.csv
+# Large preprocessed data files
+preprocessing_cache/
+*.csv
+*.npy
+*.pkl
+
+# Model files (too large)
+
+# Python cache
+__pycache__/
+*.pyc
