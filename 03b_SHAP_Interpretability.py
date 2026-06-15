@@ -50,7 +50,7 @@ print(final_model_path)
 print("Model type:", type(final_model))
 print("n_estimators_:", getattr(final_model, "n_estimators_", None))
 print("Best iteration:", getattr(final_model, "best_iteration_", None))
-print("Num trees:", getattr(final_model, "n_estimators_", None))
+print("Num trees:", final_model.booster_.num_trees())
 
 try:
     print("booster trees:", final_model.booster_.num_trees())
