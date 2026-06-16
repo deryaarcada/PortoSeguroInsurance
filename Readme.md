@@ -70,9 +70,6 @@ The pipeline relies on a structured workspace to pass preprocessed data and mode
 ├── model_results/                    # Generated automatically by Phase 1
 │   ├── business_impact_heatmaps
 │   ├── shap_analysis
-│   ├── 
-│   ├── 
-│   └── 
 ├── kaggle submissions/                 # kaggle results
 ├── 01_Preprocessing.py
 ├── 02a_LGBM_FeatureImportance.py
@@ -120,7 +117,20 @@ The project is broken down into separate, modular scripts to prevent RAM memory 
 
 ### 🚀 3. Robust Training, Validation, Interpretability & Business Alignment
 *   **`03a_ModelTRaining_Bootstrap.py`**
-    *   **Logic:** Implements a Stratified 5-Fold Cross-Validation strategy. Applies global Target Encoding to the high-cardinality `ps_car_11_cat` column inside each fold (preventing leakage). Uses **Isotonic Regression** on an inner validation split to calibrate model probabilities. Runs **1000 Bootstrap iterations** to compute exact confidence intervals for final scores.
+    *   **Logic:** This phase trains the final LightGBM model using the Optuna-optimized hyperparameters obtained in Phase 2. The script performs:
+    - 5-Fold Stratified Cross-Validation
+    - Leakage-free probability calibration using Isotonic Regression
+    - Out-of-fold prediction generation
+    - Bootstrap-based confidence interval estimation (1000 iterations)
+    - Model evolution and ablation study reporting
+    - Final production model training on the full dataset
+    - Kaggle submission file generation
+    - Reliability diagram generation
+    - Persistence of all trained artifacts and evaluation outputs
+
+Calibration is performed using a fold-safe internal calibration split to prevent information leakage between model fitting and probability calibration stages.
+
+The final production model is trained on the complete training dataset using the Optuna-optimized hyperparameters and saved for downstream explainability analysis (SHAP) and deployment.
     *   **Outputs Written To:** `models/lgbm_fold_*.pkl`, `models/isotonic_calibrator_fold_*.pkl`
 *   **`03b_Shap_Interpretability.py`**
     *   **Logic:** Utilizes **SHAP (SHapley Additive exPlanations)** TreeExplainer to break open the black-box model. Generates global summary plots and local force plots to show exactly why a driver is flagged as high-risk.
@@ -146,7 +156,7 @@ python 02b_ModelBaseline.py
 python 02c_HyperParameterTuning.py
 python 03a_ModelTRaining_Bootstrap.py
 python 03b_Shap_Interpretability.py
-python 03c_Business_Impact_Sensitivity.py
+python 03c_Business_Impact_Simulation.py
 ```
 
 ---

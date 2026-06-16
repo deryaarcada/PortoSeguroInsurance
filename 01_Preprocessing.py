@@ -5,7 +5,7 @@ This script handles:
 - Data loading and initial EDA
 - Data preprocessing and cleaning
 - Feature engineering
-- Saves preprocessed data to disk for Phase 2a
+- Saves preprocessed data to disk for Phase 2
 
 """
 # %%
@@ -236,7 +236,7 @@ print("\n" + "=" * 70)
 print("PHASE 1 COMPLETED SUCCESSFULLY")
 print("=" * 70)
 print("\nPreprocessed data saved. You can now run Phase 2:")
-print("  python 02_ModelTraining_Bootstrap.py")
+print("  python 02a_LGBM_FeatureImportance.py")
 
 
 # %%
