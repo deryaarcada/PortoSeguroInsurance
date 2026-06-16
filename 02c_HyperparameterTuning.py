@@ -1,5 +1,5 @@
 """
-PHASE 3: Hyperparameter Tuning via Optuna (Maximizing Gini Index)
+PHASE 2c: Hyperparameter Tuning via Optuna (Maximizing Gini Index)
 ================================================================
 This script finds the optimal hyperparameters for LightGBM using
 Bayesian Optimization (TPE) with 5-Fold Stratified Cross-Validation.
@@ -19,7 +19,7 @@ import lightgbm as lgb
 try:
     import optuna
 except ImportError:
-    raise ImportError("Optuna kütüphanesi eksik. Lütfen 'pip install optuna' komutuyla yükleyin.")
+    raise ImportError("Optuna library is missing. 'pip install optuna'")
 
 warnings.filterwarnings('ignore')
 optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -42,11 +42,11 @@ def load_data():
             if col in X.columns:
                 X[col] = X[col].replace(rare_vals, -1)
     
-    # ===== İNDEKS UYUŞMAZLIĞINI ÖNLEME (Kesi̇n Çözüm) =====
+    # index issue solution
     X = X.reset_index(drop=True)
     y = y.reset_index(drop=True)
     
-    # Tüm kategorik değişkenleri 'category' tipine dönüştür
+    # Convert all categorical variables to 'category' type
     cat_feats = [c for c in categorical_cols if c in X.columns]
     for col in cat_feats:
         X[col] = X[col].astype('category')
@@ -55,7 +55,7 @@ def load_data():
 
 
 def objective(trial, X, y, categorical_features):
-    # Optuna'nın deneyeceği hiperparametre aralıkları
+    # Hyperparameter ranges that Optuna will test
     params = {
         'n_estimators': trial.suggest_int('n_estimators', 400, 1200, step=100),
         'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.1, log=True),
@@ -112,7 +112,7 @@ def main():
         else:
             print(f"Trial {trial.number:02d}/30 | Current Trial Failed (Value None) | Best Gini So Far: {study.best_value:.5f}")
 
-    # catch=(Exception,) parametresi herhangi bir hatada tüm sürecin çökmesini engeller
+    # The `catch=(Exception,)` parameter prevents the entire process from crashing in case of any error.
     study.optimize(
         lambda trial: objective(trial, X, y, cat_feats), 
         n_trials=30, 
@@ -137,7 +137,7 @@ def main():
         joblib.dump(study.best_params, best_params_path)
         print(f"\n✓ Best parameters saved to: {best_params_path}")
     except ValueError:
-        print("Tüm denemeler başarısız oldu. Lütfen veri setlerinin yapısını kontrol edin.")
+        print("All attempts failed. Please check the structure of the datasets.")
 
 
 if __name__ == '__main__':

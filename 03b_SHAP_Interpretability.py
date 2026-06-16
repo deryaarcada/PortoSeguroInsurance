@@ -1,5 +1,5 @@
 """
-PHASE 3B: Model Interpretability with SHAP
+PHASE 3b: Model Interpretability with SHAP
 ================================================
 Run AFTER Phase 3a has generated model results.
 
@@ -152,7 +152,6 @@ explainer = shap.TreeExplainer(final_model.booster_)
 shap_values = explainer.shap_values(X_sample_np)
 
 # Binary classification: shap_values is either a list [neg_class, pos_class]
-# or a single array depending on SHAP version.
 if isinstance(shap_values, list):
     shap_values_pos = shap_values[1]
 else:

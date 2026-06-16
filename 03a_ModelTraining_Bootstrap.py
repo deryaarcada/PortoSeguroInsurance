@@ -22,7 +22,7 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.metrics import roc_auc_score, brier_score_loss, precision_recall_curve, auc as sklearn_auc
 from sklearn.calibration import IsotonicRegression
 from sklearn.utils import resample
-import lightgbm as lgb  # Hatanın kesin çözümü bu satırdır
+import lightgbm as lgb  
 
 CONFIG = {
     "optuna_params_file":
@@ -253,12 +253,9 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X, y), 1):
     ece_scores.append(fold_ece)
     ranking_metrics_list.append(metrics)
     
-    #SILLL print(f"  Gini: {fold_gini:.5f} | Brier: {fold_brier:.5f} | ECE: {fold_ece:.5f}")
     # PRINT LOGS: Clearly displaying both Step 2 (Raw) and Step 3 (Calibrated) for academic transparency
-    # This guarantees that the averages in the final Ablation Study are fully verifiable from the logs below
     print(f"  [Step 2 Raw Optimized] Gini: {2 * roc_auc_score(y_val_f, val_probs_raw) - 1:.5f} | PR-AUC: {raw_ranking['PR-AUC']:.5f}")
     print(f"  [Step 3 Calibrated   ] Gini: {fold_gini:.5f} | Brier: {fold_brier:.5f} | ECE: {fold_ece:.5f}")
-
 
 
     # MEMORY OPTIMIZATION 
