@@ -4,18 +4,18 @@ An advanced, production-grade machine learning pipeline designed to predict auto
 
 ##  Key Achievements & Validation Benchmarks
 * **Independent External Validation (Kaggle):** Achieved a **Public Gini Score of 0.27632** and a **Private Gini Score of 0.28394**. The higher private leaderboard score suggests good generalization performance and limited evidence of overfitting.
-* **Leakage-Free Reliability:** The internal 5-Fold Stratified Cross-Validation score (**0.27590**) perfectly aligns with the external Kaggle public benchmark, validating the integrity of the evaluation pipeline.
-* **Actuarial-Grade Calibration:** Post-calibration Expected Calibration Error (ECE) was minimized to **0.00043** using Isotonic Regression, ensuring predicted probabilities mirror empirical risk frequencies. Brier Score: 0.03477
+* **Leakage-Free Reliability:** The internal 5-Fold Stratified Cross-Validation score (**0.27730**) close to external Kaggle public benchmark, validating the integrity of the evaluation pipeline.
+* **Actuarial-Grade Calibration:** Post-calibration Expected Calibration Error (ECE) was minimized to **0.00041** using Isotonic Regression, ensuring predicted probabilities mirror empirical risk frequencies. Brier Score: 0.03477
 
 
 | Metric | Value |
 | :--- | :--- |
 | Kaggle Public Gini | 0.27632 |
 | Kaggle Private Gini | 0.28394 |
-| Internal CV Gini | 0.27641 |
-| PR-AUC | 0.06671 |
-| Brier Score | 0.03477 |
-| Expected Calibration Error (ECE) | 0.00045 |
+| Internal CV Gini | 0.27730 |
+| PR-AUC | 0.06663 |
+| Brier Score | 0.03476 |
+| Expected Calibration Error (ECE) | 0.00041 |
 
 ---
 
@@ -57,7 +57,7 @@ The pipeline is modularized into dedicated Python scripts, enforcing clean separ
 
 ## Technical Insight: Reliability & Calibration
 
-The pipeline features a state-of-the-art **Expected Calibration Error (ECE) of 0.00043**. 
+The pipeline features a state-of-the-art **Expected Calibration Error (ECE) of 0.00041**. 
 
 
 ---
@@ -150,7 +150,7 @@ pip install pandas numpy lightgbm scikit-learn joblib tqdm shap optuna matplotli
 ```
 
 ### 2. Running the Pipeline
-Run the scripts sequentially in your terminal:
+Run the scripts sequentially in your terminal by using **run_pipeline.py**:
 ```bash
 python 01_Preprocessing.py
 python 02a_LGBM_FeatureImportance.py
