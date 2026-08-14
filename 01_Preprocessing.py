@@ -108,7 +108,6 @@ for col in current_cat_features:
 
 print(f"Converted {len(current_cat_features)} columns to 'category' dtype")
 
-# ps_car_11_cat will be handled with target encoding in Phase 2
 
 # ============================================================================
 # Rare class handling (learn from TRAIN only and apply to val/test later)
@@ -136,7 +135,7 @@ for col in cols_for_rare:
 print(f"Applied rare class mapping for {len(rare_class_map)} columns (learned from train)")
 
 # ============================================================================
-# 5. FEATURE SCALING (Optional - LightGBM doesn't require, but for completeness)
+# 5. FEATURE SCALING 
 # ============================================================================
 
 print("\n--- Feature Statistics ---")
@@ -202,7 +201,7 @@ print(f"✓ metadata.pkl")
 print(f"✓ categorical_cols.pkl")
 
 # ============================================================================
-# 8. CREATE SYMLINKS FOR PHASE 2 (Optional - for convenience)
+# 8. CREATE SYMLINKS FOR PHASE 2 
 # ============================================================================
 
 print("\n--- Creating convenience copies ---")
@@ -236,7 +235,7 @@ print("\n" + "=" * 70)
 print("PHASE 1 COMPLETED SUCCESSFULLY")
 print("=" * 70)
 print("\nPreprocessed data saved. You can now run Phase 2:")
-print("  python 02a_LGBM_FeatureImportance.py")
+print("  python 02a_BaselineModels.py")
 
 
 # %%

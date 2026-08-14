@@ -1,18 +1,14 @@
 """
-ALT1 - 2b: Model comparison for selection (ALL FEATURES & Bootstrap CI)
+2b: Model comparison for selection (ALL FEATURES & Bootstrap CI)
 ================================================================================
-This is the "Alt1" version of the baseline comparison script. Unlike the
-original 02b script, it does NOT filter down to a pre-selected Top-20 feature
-list. Instead it uses ALL preprocessed features for LightGBM, RandomForest,
-and XGBoost. This removes the feature-selection leakage that arises when a
-feature subset chosen on the full dataset (e.g. via a separate feature
-importance run) is then evaluated via cross-validation on that same dataset.
+This is the baseline comparison script.It uses ALL preprocessed features for LightGBM, RandomForest,
+and XGBoost. 
 
 It computes a 95% Confidence Interval for the Gini index using Bootstrap
-resampling on the out-of-fold predictions, exactly as the original 02b did.
+resampling on the out-of-fold predictions.
 
 Run after 01_Preprocessing.py has produced preprocessed data and
-Before 02c_HyperparameterTuning.py
+Before 02b_HyperparameterTuning.py
 """
 
 import os
@@ -85,27 +81,6 @@ def apply_target_encoding(cat_series, enc_map, global_mean):
     return cat_series.map(enc_map).fillna(global_mean)
 
 
-def get_importances_from_model(model, feature_names):
-    """Return a pandas Series of importances aligned to feature_names or raise."""
-    try:
-        booster = getattr(model, 'booster_', None) or getattr(model, 'booster', None)
-        if booster is not None:
-            gains = booster.feature_importance(importance_type='gain')
-            if gains is not None and len(gains) == len(feature_names):
-                return pd.Series(gains, index=feature_names)
-    except Exception:
-        pass
-
-    try:
-        imp = getattr(model, 'feature_importances_', None)
-        if imp is not None and len(imp) == len(feature_names):
-            return pd.Series(imp, index=feature_names)
-    except Exception:
-        pass
-
-    raise RuntimeError('Could not extract feature importances from model')
-
-
 def load_data():
     print('Loading preprocessed data...')
     X = pd.read_csv('X_preprocessed.csv')
@@ -120,8 +95,7 @@ def load_data():
                 X[col] = X[col].replace(rare_vals, -1)
         print('Applied training-derived rare class mapping')
 
-    # ===== ALT1: USE ALL FEATURES (no Top-20 filtering) =====
-    print(f'Using ALL preprocessed features (no feature selection). X shape: {X.shape}, y shape: {y.shape}')
+    print(f'Using ALL preprocessed features. X shape: {X.shape}, y shape: {y.shape}')
 
     return X, y, categorical_cols
 
@@ -133,7 +107,7 @@ def run_cv_for_model(name, model_factory, X, y, categorical_cols, n_splits=5):
 
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
 
-    # Tüm katlamaların validasyon tahminlerini Bootstrap için havuzda biriktiriyoruz
+    # Pooling the validation predictions of all folds for Bootstrap
     all_y_val = []
     all_val_probs = []
 
@@ -263,7 +237,7 @@ def main():
 
     summary_df = pd.DataFrame(baseline_results)
 
-    # Tam olarak hedeflediğiniz çıktı tablosu sütun sırası
+    # Comparison and result table
     columns_order = ['Model', 'Gini Index', 'Gini 95% CI', 'Recall @ Top 1%', 'PR-AUC']
     summary_df = summary_df[columns_order]
 

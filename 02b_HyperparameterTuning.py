@@ -1,5 +1,5 @@
 """
-PHASE 2c: Hyperparameter Tuning via Optuna (Maximizing Gini Index)
+PHASE 2b: Hyperparameter Tuning via Optuna
 ================================================================
 This script finds the optimal hyperparameters for LightGBM using
 Bayesian Optimization (TPE) with 5-Fold Stratified Cross-Validation.

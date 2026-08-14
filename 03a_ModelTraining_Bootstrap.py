@@ -111,7 +111,7 @@ y = pd.read_csv('y_preprocessed.csv').iloc[:, 0].reset_index(drop=True)
 test_features = pd.read_csv('test_preprocessed.csv').reset_index(drop=True)
 categorical_cols = joblib.load('categorical_cols.pkl')
  
-# Training-derived rare class mapping (Leakage-free approach requested by advisor)
+# Training-derived rare class mapping 
 rare_map_path = 'rare_class_map.pkl'
 if os.path.exists(rare_map_path):
     try:
@@ -144,13 +144,7 @@ lgb_params_raw = joblib.load(
     CONFIG["optuna_params_file"]
 )
  
-# ----------------------------------------------------------------------
-# FIX: 'n_estimators_effective' is not a valid LightGBM parameter — it is
-# metadata written by 02c recording the AVERAGE early-stopped tree count
-# for the best trial. Pop it out here so it never reaches LGBMClassifier
-# (this removes the "Unknown parameter: n_estimators_effective" warnings),
-# and keep it aside for use in the final production model below.
-# ----------------------------------------------------------------------
+
 lgb_params = dict(lgb_params_raw)
 n_estimators_effective = lgb_params.pop('n_estimators_effective', None)
  
@@ -195,13 +189,12 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X, y), 1):
     y_val_f = y.iloc[val_idx]
     X_test_copy = test_features.copy()
  
-    # METHODOLOGICAL REVISION: Fold-safe 80/20 split to avoid calibration leakage
+    # Fold-safe 80/20 split to avoid calibration leakage
     X_fit, X_cal, y_fit, y_cal = train_test_split(
         X_train_f, y_train_f, test_size=0.2, stratify=y_train_f, random_state=42
     )
  
-    # Safe category type casting (Prevents SettingWithCopyWarning)
-    X_fit = X_fit.copy()
+    # Safe category type casting
     X_cal = X_cal.copy()
     for col in current_cat_features:
         X_fit[col] = X_fit[col].astype('category')
@@ -263,7 +256,7 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X, y), 1):
     ece_scores.append(fold_ece)
     ranking_metrics_list.append(metrics)
  
-    # PRINT LOGS: Clearly displaying both Step 2 (Raw) and Step 3 (Calibrated) for academic transparency
+    # PRINT LOGS: Clearly displaying both Step 2 (Raw) and Step 3 (Calibrated)
     print(f"  [Step 2 Raw Optimized] Gini: {2 * roc_auc_score(y_val_f, val_probs_raw) - 1:.5f} | PR-AUC: {raw_ranking['PR-AUC']:.5f}")
     print(f"  [Step 3 Calibrated   ] Gini: {fold_gini:.5f} | Brier: {fold_brier:.5f} | ECE: {fold_ece:.5f}")
  

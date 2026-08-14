@@ -3,19 +3,15 @@ PHASE 3b: Model Interpretability with SHAP
 ==========================================
 
 Run AFTER Phase 3a has generated model results.
+Although Porto Seguro data is anonymized, the purpose of the features can be partially understood. In this respect, SHAP analysis is performed in section 3b.
 
 This script:
 - Loads the final production LightGBM model from Phase 3a
 - Applies the same feature representation used in Phase 3a
-- Keeps ps_car_11_cat as a native categorical feature
 - Computes SHAP values on a reproducible sample of 1,000 observations
 - Generates SHAP summary, importance, dependence, force and waterfall plots
 - Saves SHAP values and supporting data
 
-IMPORTANT:
-ps_car_11_cat is NOT target encoded in this phase.
-It is handled as a native categorical feature by LightGBM,
-consistent with Phase 3a.
 """
 
 import pandas as pd

@@ -11,8 +11,6 @@ Assumptions:
 - Expected savings for a customer = saved_loss * P(claim) - action_cost
 - We rank customers by predicted probability and consider top-k percentiles.
 
-Do NOT recompute rare classes here; this script assumes test_preds_calibrated.npy 
-was produced by Phase 2 using training-derived transformations only.
 """
 
 import numpy as np
