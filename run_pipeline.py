@@ -25,12 +25,11 @@ from pathlib import Path
 # Pipeline stages in the exact order defined in the README.
 # (name, script_filename, description)
 PIPELINE_STAGES = [
-    ("Preprocessing",              "01_Preprocessing.py",             "Data cleaning, encoding, artifact generation"),
-    ("Feature Importance",         "02a_LGBM_FeatureImportance.py",   "Baseline LightGBM feature importance + pruning"),
-    ("Baseline Model",             "02b_ModelBaseline.py",            "Out-of-the-box LightGBM baseline (5-fold CV)"),
-    ("Hyperparameter Tuning",      "02c_HyperParameterTuning.py",     "Optuna/grid-search hyperparameter sweep"),
-    ("Training + Calibration",     "03a_ModelTRaining_Bootstrap.py",  "Final model, isotonic calibration, bootstrap CIs"),
-    ("SHAP Interpretability",      "03b_Shap_Interpretability.py",    "TreeSHAP global/local explainability"),
+    ("Preprocessing",              "01_Preprocessing.py",               "Data cleaning, encoding, artifact generation"),
+    ("Baseline Models",            "02a_BaselineModels.py",             "Baseline models: Random Forest, LGBM, XGBoost"),
+    ("Hyperparameter Tuning",      "02b_HyperParameterTuning.py",       "Optuna/grid-search hyperparameter sweep"),
+    ("Training + Calibration",     "03a_ModelTRaining_Bootstrap.py",    "Final model, isotonic calibration, bootstrap CIs"),
+    ("SHAP Interpretability",      "03b_Shap_Interpretability.py",      "TreeSHAP global/local explainability"),
     ("Business Impact Simulation", "03c_Business_Impact_Simulation.py", "Threshold/cost-benefit simulation"),
 ]
 
@@ -76,7 +75,7 @@ def run_stage(name: str, script: str, description: str, dry_run: bool = False) -
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the car insurance claim prediction pipeline end-to-end.")
     parser.add_argument("--only", type=str, default=None,
-                         help="Run a single stage by its script filename, e.g. --only 02c_HyperParameterTuning.py")
+                         help="Run a single stage by its script filename, e.g. --only 02b_HyperParameterTuning.py")
     parser.add_argument("--skip-preprocessing", action="store_true",
                          help="Skip stage 1 (01_Preprocessing.py), useful when preprocessed artifacts already exist.")
     parser.add_argument("--from-stage", type=str, default=None,

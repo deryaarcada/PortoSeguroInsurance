@@ -1,9 +1,15 @@
 """
-PHASE 2b BASELINE: Model comparison for selection (Top 20 Features & Bootstrap CI)
+ALT1 - 2b: Model comparison for selection (ALL FEATURES & Bootstrap CI)
 ================================================================================
-This script compares LightGBM, RandomForest, and XGBoost using the
-top 20 most important features. It computes a 95% Confidence Interval for
-the Gini index using Bootstrap resampling on the out-of-fold predictions.
+This is the "Alt1" version of the baseline comparison script. Unlike the
+original 02b script, it does NOT filter down to a pre-selected Top-20 feature
+list. Instead it uses ALL preprocessed features for LightGBM, RandomForest,
+and XGBoost. This removes the feature-selection leakage that arises when a
+feature subset chosen on the full dataset (e.g. via a separate feature
+importance run) is then evaluated via cross-validation on that same dataset.
+
+It computes a 95% Confidence Interval for the Gini index using Bootstrap
+resampling on the out-of-fold predictions, exactly as the original 02b did.
 
 Run after 01_Preprocessing.py has produced preprocessed data and
 Before 02c_HyperparameterTuning.py
@@ -28,14 +34,6 @@ try:
 except ImportError:
     xgb_available = False
 
-# The most important 20 features from previous step
-TOP_20_FEATURES = [
-    'ps_car_11_cat', 'ps_ind_03', 'ps_car_13', 'ps_car_01_cat', 'ps_car_06_cat',
-    'ps_ind_15', 'ps_reg_03', 'ps_reg_01', 'ps_ind_01', 'ps_ind_05_cat',
-    'ps_car_15', 'ps_reg_02', 'ps_car_09_cat', 'ps_car_14', 'ps_ind_02_cat',
-    'ps_ind_17_bin', 'ps_ind_04_cat', 'ps_car_07_cat', 'ps_car_04_cat', 'ps_car_12'
-]
-
 
 def bootstrap_gini_ci(y_true, y_probs, n_iterations=200):
     """
@@ -44,16 +42,16 @@ def bootstrap_gini_ci(y_true, y_probs, n_iterations=200):
     stats = []
     y_true = np.array(y_true)
     y_probs = np.array(y_probs)
-    
+
     for i in range(n_iterations):
         # Resampling
         y_true_resample, y_probs_resample = resample(y_true, y_probs, random_state=i)
-        
+
         # Gini calculation (2 * AUC - 1)
         auc_boot = roc_auc_score(y_true_resample, y_probs_resample)
         gini_boot = 2 * auc_boot - 1
         stats.append(gini_boot)
-    
+
     # %95 Confidence Interval Limits (2.5 and 97.5 percentiles)
     lower = np.percentile(stats, 2.5)
     upper = np.percentile(stats, 97.5)
@@ -122,11 +120,9 @@ def load_data():
                 X[col] = X[col].replace(rare_vals, -1)
         print('Applied training-derived rare class mapping')
 
-    # ===== TOP 20 FEATURE =====
-    existing_top_features = [c for c in TOP_20_FEATURES if c in X.columns]
-    X = X[existing_top_features].copy()
-    print(f'Filtered to Top 20 features. X shape: {X.shape}, y shape: {y.shape}')
-    
+    # ===== ALT1: USE ALL FEATURES (no Top-20 filtering) =====
+    print(f'Using ALL preprocessed features (no feature selection). X shape: {X.shape}, y shape: {y.shape}')
+
     return X, y, categorical_cols
 
 
@@ -136,11 +132,11 @@ def run_cv_for_model(name, model_factory, X, y, categorical_cols, n_splits=5):
     print('=' * 70)
 
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
-    
+
     # Tüm katlamaların validasyon tahminlerini Bootstrap için havuzda biriktiriyoruz
     all_y_val = []
     all_val_probs = []
-    
+
     fold_pr = []
     fold_recall_1 = []
 
@@ -156,7 +152,7 @@ def run_cv_for_model(name, model_factory, X, y, categorical_cols, n_splits=5):
             for col in current_cat_features:
                 X_train[col] = X_train[col].astype('category')
                 X_val[col] = X_val[col].astype('category')
-            
+
             model = model_factory()
             model.fit(
                 X_train, y_train,
@@ -170,7 +166,7 @@ def run_cv_for_model(name, model_factory, X, y, categorical_cols, n_splits=5):
                 enc_map, global_mean = fit_target_encoding_map(X_train['ps_car_11_cat'], y_train, smoothing=10)
                 X_train['ps_car_11_cat'] = apply_target_encoding(X_train['ps_car_11_cat'], enc_map, global_mean)
                 X_val['ps_car_11_cat'] = apply_target_encoding(X_val['ps_car_11_cat'], enc_map, global_mean)
-            
+
             other_cats = [c for c in current_cat_features if c != 'ps_car_11_cat']
             for col in other_cats:
                 X_train[col] = X_train[col].astype('category').cat.codes
@@ -184,7 +180,7 @@ def run_cv_for_model(name, model_factory, X, y, categorical_cols, n_splits=5):
 
         fold_pr.append(ranking['PR-AUC'])
         fold_recall_1.append(ranking['Recall@1%'])
-        
+
         all_y_val.extend(y_val.values)
         all_val_probs.extend(val_probs)
 
@@ -262,48 +258,43 @@ def main():
         baseline_results.append(res)
 
     print('\n' + '=' * 85)
-    print('FINAL BASELINE COMPARISON (TOP 20 FEATURES & BOOTSTRAP GINI)')
+    print('FINAL BASELINE COMPARISON')
     print('=' * 85)
-    
+
     summary_df = pd.DataFrame(baseline_results)
-    
+
     # Tam olarak hedeflediğiniz çıktı tablosu sütun sırası
     columns_order = ['Model', 'Gini Index', 'Gini 95% CI', 'Recall @ Top 1%', 'PR-AUC']
     summary_df = summary_df[columns_order]
-    
+
     print(summary_df.to_string(index=False, formatters={
         'Gini Index': '{:.6f}'.format,
         'Recall @ Top 1%': '{:.6f}'.format,
         'PR-AUC': '{:.5f}'.format
     }))
 
-
     # ============================================================================
     # SAVE BASELINE METRICS DYNAMICALLY FOR ABLATION STUDY
     # ============================================================================
-    # Get the first model results (LightGBM Baseline) from the list
     try:
-        # baseline_results listesindeki ilk satırı (LightGBM Baseline) çekiyoruz
-        # Hata​​sız dinamik eşleme için sütun adları tablonuzla birebir eşitlendi
-        lgb_base_res = baseline_results[0]
         
+        lgb_base_res = baseline_results[0]
+
         baseline_metrics = {
             'gini': float(lgb_base_res['Gini Index']),
             'pr_auc': float(lgb_base_res['PR-AUC']),
             'recall_1': float(lgb_base_res['Recall @ Top 1%'])
         }
-        
-        # Eliminate any global NameError issues using an explicit directory string
+
         safe_output_dir = 'model_results'
         if not os.path.exists(safe_output_dir):
             os.makedirs(safe_output_dir)
-            
+
         joblib.dump(baseline_metrics, os.path.join(safe_output_dir, 'baseline_metrics_backup.pkl'))
         print("\n✓ SUCCESS: Baseline metrics backup generated dynamically for Ablation Study.")
-        
+
     except Exception as e:
         print(f"\nWarning: Could not save baseline metrics automatically ({e}).")
-
 
 
 if __name__ == '__main__':
