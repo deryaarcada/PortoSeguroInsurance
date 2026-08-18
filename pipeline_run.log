@@ -70,3 +70,29 @@
 [2026-08-13 22:59:25] ======================================================================
 [2026-08-13 22:59:25] PIPELINE RUN COMPLETE — total elapsed: 52.1 minutes
 [2026-08-13 22:59:25] ======================================================================
+[2026-08-16 22:31:05] ======================================================================
+[2026-08-16 22:31:05] PIPELINE RUN START — 6 stage(s) scheduled
+[2026-08-16 22:31:05] ======================================================================
+[2026-08-16 22:31:05] ▶️  STAGE START: Preprocessing (01_Preprocessing.py) — Data cleaning, encoding, artifact generation
+[2026-08-16 22:31:21] STAGE COMPLETE: Preprocessing in 15.3s
+[2026-08-16 22:31:21] ▶️  STAGE START: Baseline Models (02a_BaselineModels.py) — Baseline models: Random Forest, LGBM, XGBoost
+[2026-08-16 22:31:22] STAGE FAILED: Baseline Models (exit code 1) after 1.7s
+[2026-08-16 22:31:22] Pipeline halted. Fix the error above and re-run, optionally with --skip-* flags to resume.
+[2026-08-16 23:29:11] ======================================================================
+[2026-08-16 23:29:11] PIPELINE RUN START — 6 stage(s) scheduled
+[2026-08-16 23:29:11] ======================================================================
+[2026-08-16 23:29:11] ▶️  STAGE START: Preprocessing (01_Preprocessing.py) — Data cleaning, encoding, artifact generation
+[2026-08-16 23:29:26] STAGE COMPLETE: Preprocessing in 15.4s
+[2026-08-16 23:29:26] ▶️  STAGE START: Baseline Models (02a_BaselineModels.py) — Baseline models: Random Forest, LGBM, XGBoost
+[2026-08-16 23:38:50] STAGE COMPLETE: Baseline Models in 563.4s
+[2026-08-16 23:38:50] ▶️  STAGE START: Hyperparameter Tuning (02b_HyperParameterTuning.py) — Optuna/grid-search hyperparameter sweep
+[2026-08-17 00:05:34] STAGE COMPLETE: Hyperparameter Tuning in 1604.3s
+[2026-08-17 00:05:34] ▶️  STAGE START: Training + Calibration (03a_ModelTRaining_Bootstrap.py) — Final model, isotonic calibration, bootstrap CIs
+[2026-08-17 00:09:08] STAGE COMPLETE: Training + Calibration in 213.8s
+[2026-08-17 00:09:08] ▶️  STAGE START: SHAP Interpretability (03b_Shap_Interpretability.py) — TreeSHAP global/local explainability
+[2026-08-17 00:09:28] STAGE COMPLETE: SHAP Interpretability in 20.4s
+[2026-08-17 00:09:28] ▶️  STAGE START: Business Impact Simulation (03c_Business_Impact_Simulation.py) — Threshold/cost-benefit simulation
+[2026-08-17 00:09:33] STAGE COMPLETE: Business Impact Simulation in 4.6s
+[2026-08-17 00:09:33] ======================================================================
+[2026-08-17 00:09:33] PIPELINE RUN COMPLETE — total elapsed: 40.4 minutes
+[2026-08-17 00:09:33] ======================================================================

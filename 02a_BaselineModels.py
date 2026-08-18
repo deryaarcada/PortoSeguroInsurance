@@ -1,5 +1,5 @@
 """
-2b: Model comparison for selection (ALL FEATURES & Bootstrap CI)
+2a: Model comparison for selection (ALL FEATURES & Bootstrap CI)
 ================================================================================
 This is the baseline comparison script.It uses ALL preprocessed features for LightGBM, RandomForest,
 and XGBoost. 

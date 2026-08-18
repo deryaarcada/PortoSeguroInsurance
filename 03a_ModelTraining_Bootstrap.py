@@ -60,8 +60,10 @@ def evaluate_ranking(y_true, y_probs, k_percent_list=[0.005, 0.01, 0.02]):
 def calculate_ece(y_true, y_probs, n_bins=10):
     """Calculate Expected Calibration Error."""
     from sklearn.calibration import calibration_curve
+
+    prob_true, prob_pred = calibration_curve(y_true, y_probs, n_bins=n_bins, strategy='quantile')
+     #prob_true, prob_pred = calibration_curve(y_true, y_probs, n_bins=n_bins)
  
-    prob_true, prob_pred = calibration_curve(y_true, y_probs, n_bins=n_bins)
     bins = np.linspace(0, 1, n_bins + 1)
     active_bin_indices = np.digitize(prob_pred, bins) - 1
     active_bin_indices = np.clip(active_bin_indices, 0, n_bins - 1)
@@ -80,7 +82,7 @@ def plot_reliability_diagram(y_true, y_probs, n_bins=10, title="Reliability Diag
     """Plots and saves an academic-grade Reliability Diagram (Calibration Curve)."""
     from sklearn.calibration import calibration_curve
  
-    prob_true, prob_pred = calibration_curve(y_true, y_probs, n_bins=n_bins)
+    prob_true, prob_pred = calibration_curve(y_true, y_probs, n_bins=n_bins, strategy='quantile')
  
     plt.figure(figsize=(6, 6))
     plt.plot([0, 1], [0, 1], linestyle='--', color='gray', label='Perfect Calibration')
@@ -100,6 +102,68 @@ def plot_reliability_diagram(y_true, y_probs, n_bins=10, title="Reliability Diag
     plt.savefig(out_png, dpi=300, bbox_inches='tight')
     plt.close()
     print(f"✓ Saved reliability diagram to: {out_png}")
+
+    # ============================================================
+    # ZOOMED RELIABILITY DIAGRAM (0-10%)
+    # ============================================================
+
+    plt.figure(figsize=(6, 6))
+
+    plt.plot(
+        [0, 0.10],
+        [0, 0.10],
+        linestyle='--',
+        color='gray',
+        label='Perfect Calibration'
+    )
+
+    plt.plot(
+        prob_pred,
+        prob_true,
+        marker='s',
+        color='darkblue',
+        linewidth=2,
+        label='LightGBM (Calibrated)'
+    )
+
+    plt.xlim(0, 0.10)
+    plt.ylim(0, 0.10)
+
+    plt.title(
+        'Reliability Diagram (Zoomed: 0–10%)',
+        fontsize=12,
+        fontweight='bold',
+        pad=12
+    )
+
+    plt.xlabel(
+        'Mean Predicted Probability',
+        fontsize=10
+    )
+
+    plt.ylabel(
+        'Fraction of Positives (Actual)',
+        fontsize=10
+    )
+
+    plt.grid(True, linestyle=':', alpha=0.6)
+    plt.legend(loc='upper left', fontsize=10)
+    plt.tight_layout()
+
+    out_png_zoomed = os.path.join(
+        output_dir,
+        'lgbm_reliability_diagram_zoomed.png'
+    )
+
+    plt.savefig(
+        out_png_zoomed,
+        dpi=300,
+        bbox_inches='tight'
+    )
+
+    plt.close()
+    print(f"✓ Zoomed reliability diagram saved to: {out_png_zoomed}")
+
  
  
 # ============================================================================
