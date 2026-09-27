@@ -96,3 +96,677 @@
 [2026-08-17 00:09:33] ======================================================================
 [2026-08-17 00:09:33] PIPELINE RUN COMPLETE — total elapsed: 40.4 minutes
 [2026-08-17 00:09:33] ======================================================================
+[2026-08-22 22:56:10] ======================================================================
+[2026-08-22 22:56:10] PIPELINE RUN START — 6 stage(s) scheduled
+[2026-08-22 22:56:10] ======================================================================
+[2026-08-22 22:56:10] ▶️  STAGE START: Preprocessing (01_Preprocessing.py) — Data cleaning, encoding, artifact generation
+[2026-08-22 22:56:30] STAGE COMPLETE: Preprocessing in 19.9s
+[2026-08-22 22:56:30] ▶️  STAGE START: Baseline Models (02a_BaselineModels.py) — Baseline models: Random Forest, LGBM, XGBoost
+[2026-08-22 23:07:32] STAGE COMPLETE: Baseline Models in 661.5s
+[2026-08-22 23:07:32] ▶️  STAGE START: Hyperparameter Tuning (02b_HyperParameterTuning.py) — Optuna/grid-search hyperparameter sweep
+[2026-08-22 23:38:50] STAGE COMPLETE: Hyperparameter Tuning in 1878.1s
+[2026-08-22 23:38:50] ▶️  STAGE START: Training + Calibration (03a_ModelTRaining_Bootstrap.py) — Final model, isotonic calibration, bootstrap CIs
+[2026-08-22 23:42:22] STAGE COMPLETE: Training + Calibration in 212.0s
+[2026-08-22 23:42:22] ▶️  STAGE START: SHAP Interpretability (03b_Shap_Interpretability.py) — TreeSHAP global/local explainability
+[2026-08-22 23:42:41] STAGE COMPLETE: SHAP Interpretability in 19.5s
+[2026-08-22 23:42:41] ▶️  STAGE START: Business Impact Simulation (03c_Business_Impact_Simulation.py) — Threshold/cost-benefit simulation
+[2026-08-22 23:42:46] STAGE COMPLETE: Business Impact Simulation in 4.7s
+[2026-08-22 23:42:46] ======================================================================
+[2026-08-22 23:42:46] PIPELINE RUN COMPLETE — total elapsed: 46.6 minutes
+[2026-08-22 23:42:46] ======================================================================
+[2026-09-20 19:47:49] ======================================================================
+[2026-09-20 19:47:49] PIPELINE RUN START — 6 stage(s) scheduled
+[2026-09-20 19:47:49] ======================================================================
+[2026-09-20 19:47:49] ▶️  STAGE START: Preprocessing (01_Preprocessing.py) — Data cleaning, encoding, artifact generation
+[2026-09-20 19:48:07] STAGE COMPLETE: Preprocessing in 17.6s
+[2026-09-20 19:48:07] ▶️  STAGE START: Baseline Models (02a_BaselineModels.py) — Baseline models: Random Forest, LGBM, XGBoost
+[2026-09-20 19:56:47] STAGE COMPLETE: Baseline Models in 520.5s
+[2026-09-20 19:56:47] ▶️  STAGE START: Hyperparameter Tuning (02b_HyperparameterTuning.py) — Optuna/grid-search hyperparameter sweep
+[2026-09-20 20:30:05] STAGE COMPLETE: Hyperparameter Tuning in 1997.2s
+[2026-09-20 20:30:05] ERROR: '03a_ModelTraining_Bootstrap.py' not found in current directory. Aborting pipeline.
+[2026-09-20 21:08:21] ======================================================================
+[2026-09-20 21:08:21] PIPELINE RUN START — 6 stage(s) scheduled
+[2026-09-20 21:08:21] ======================================================================
+[2026-09-20 21:08:21] ▶️  STAGE START: Preprocessing (01_Preprocessing.py) — Data cleaning, encoding, artifact generation
+[2026-09-20 21:08:37] STAGE COMPLETE: Preprocessing in 16.7s
+[2026-09-20 21:08:37] ▶️  STAGE START: Baseline Models (02a_BaselineModels.py) — Baseline models: Random Forest, LGBM, XGBoost
+[2026-09-20 21:19:37] STAGE COMPLETE: Baseline Models in 659.4s
+[2026-09-20 21:19:37] ▶️  STAGE START: Hyperparameter Tuning (02b_HyperparameterTuning.py) — Optuna/grid-search hyperparameter sweep
+[2026-09-20 21:51:17] STAGE COMPLETE: Hyperparameter Tuning in 1900.7s
+[2026-09-20 21:51:17] ▶️  STAGE START: Training + Calibration (03a_ModelTraining_Bootstrap.py) — Final model, isotonic calibration, bootstrap CIs
+[2026-09-20 21:54:56] STAGE COMPLETE: Training + Calibration in 219.0s
+[2026-09-20 21:54:56] ▶️  STAGE START: SHAP Interpretability (03b_SHAP_Interpretability.py) — TreeSHAP global/local explainability
+[2026-09-20 21:55:18] STAGE COMPLETE: SHAP Interpretability in 21.5s
+[2026-09-20 21:55:18] ▶️  STAGE START: Business Impact Simulation (03c_Business_Impact_Simulation.py) — Threshold/cost-benefit simulation
+[2026-09-20 21:55:23] STAGE COMPLETE: Business Impact Simulation in 4.7s
+[2026-09-20 21:55:23] ======================================================================
+[2026-09-20 21:55:23] PIPELINE RUN COMPLETE — total elapsed: 47.0 minutes
+[2026-09-20 21:55:23] ======================================================================
+[2026-09-26 13:59:23] ======================================================================
+[2026-09-26 13:59:23] PIPELINE RUN START — 6 stage(s) scheduled
+[2026-09-26 13:59:23] ======================================================================
+[2026-09-26 13:59:23] ▶️  STAGE START: Preprocessing (01_Preprocessing.py) — Data cleaning, encoding, artifact generation
+[2026-09-26 13:59:38] STAGE COMPLETE: Preprocessing in 15.1s
+[2026-09-26 13:59:38] ▶️  STAGE START: Baseline Models (02a_BaselineModels.py) — Baseline models: Random Forest, LGBM, XGBoost
+[2026-09-26 14:08:39] STAGE COMPLETE: Baseline Models in 541.3s
+[2026-09-26 14:08:39] ▶️  STAGE START: Hyperparameter Tuning (02b_HyperparameterTuning.py) — Optuna/grid-search hyperparameter sweep
+[2026-09-26 14:36:49] STAGE COMPLETE: Hyperparameter Tuning in 1689.5s
+[2026-09-26 14:36:49] ▶️  STAGE START: Training + Calibration (03a_ModelTraining_Bootstrap.py) — Final model, isotonic calibration, bootstrap CIs
+[2026-09-26 14:39:59] STAGE COMPLETE: Training + Calibration in 190.4s
+[2026-09-26 14:39:59] ▶️  STAGE START: SHAP Interpretability (03b_SHAP_Interpretability.py) — TreeSHAP global/local explainability
+[2026-09-26 14:40:37] STAGE COMPLETE: SHAP Interpretability in 38.0s
+[2026-09-26 14:40:37] ▶️  STAGE START: Business Impact Simulation (03c_Business_Impact_Simulation.py) — Threshold/cost-benefit simulation
+[2026-09-26 14:40:40] STAGE COMPLETE: Business Impact Simulation in 3.6s
+[2026-09-26 14:40:40] ======================================================================
+[2026-09-26 14:40:40] PIPELINE RUN COMPLETE — total elapsed: 41.3 minutes
+[2026-09-26 14:40:40] ======================================================================
+
+
+
+
+
+ python .\00_EDA_ps_calc_justification__optional_.py
+======================================================================
+PHASE 0: EDA — Justifying Removal of ps_calc_* Features
+======================================================================
+
+Loading raw train.csv (ps_calc_* columns not yet dropped)...
+Train shape: (595212, 59)
+Found 20 ps_calc_* columns and 37 other feature columns.
+
+======================================================================
+STEP 1: Chi-square test + Cramer's V (ps_calc_* vs. target)
+======================================================================
+       feature chi2_statistic p_value cramers_v  significant_p<0.05
+    ps_calc_01          14.11  0.1184    0.0029               False
+    ps_calc_07          11.44  0.2466    0.0020               False
+    ps_calc_02          10.27  0.3289    0.0015               False
+    ps_calc_05           6.97  0.3240    0.0013               False
+ps_calc_19_bin           1.79  0.1809    0.0012               False
+    ps_calc_03           7.49  0.5862    0.0000               False
+    ps_calc_04           3.09  0.6855    0.0000               False
+    ps_calc_06           7.38  0.6893    0.0000               False
+    ps_calc_09           6.15  0.5223    0.0000               False
+    ps_calc_10          24.02  0.5184    0.0000               False
+    ps_calc_11          18.33  0.5005    0.0000               False
+    ps_calc_08           5.94  0.8200    0.0000               False
+    ps_calc_12           3.88  0.9524    0.0000               False
+    ps_calc_13           8.53  0.8077    0.0000               False
+ps_calc_15_bin           0.14  0.7130    0.0000               False
+    ps_calc_14          15.01  0.8944    0.0000               False
+ps_calc_16_bin           0.22  0.6354    0.0000               False
+ps_calc_17_bin           0.02  0.9011    0.0000               False
+ps_calc_18_bin           0.18  0.6755    0.0000               False
+ps_calc_20_bin           0.67  0.4136    0.0000               False
+
+Mean Cramer's V across ps_calc_*: 0.0004
+Max  Cramer's V across ps_calc_*: 0.0029
+(Cramer's V < ~0.05 is conventionally considered negligible association, regardless of p-value significance in a 595K-row sample.)
+✓ Saved: eda_results/ps_calc_chi2_cramers_v.csv
+
+======================================================================
+STEP 2: Correlation structure among ps_calc_* columns
+======================================================================
+Mean |correlation| among ps_calc_* features (off-diagonal): 0.0009
+Max  |correlation| among ps_calc_* features (off-diagonal): 0.0037
+(Values close to 0 across the board suggest these columns behave like independent noise rather than a coherent, informative feature block.)
+✓ Saved: eda_results/ps_calc_correlation_heatmap.png
+
+======================================================================
+STEP 3: Target-conditioned distributions (sample columns)
+======================================================================
+✓ Saved: eda_results/ps_calc_target_conditioned_distributions.png
+
+======================================================================
+STEP 4: LightGBM feature importance WITH ps_calc_* included
+======================================================================
+Training a single LightGBM model on ALL features (including ps_calc_*) to compare relative importances...
+
+Total features: 57 (of which 20 are ps_calc_*)
+ps_calc_* features found in the BOTTOM half of the importance ranking: 17 / 20
+
+Average rank of ps_calc_* features vs. all other features:
+  ps_calc_* mean rank : 37.5
+  other      mean rank : 24.4
+  (out of 57 total features; lower rank = more important)
+✓ Saved: eda_results/full_feature_importance_with_ps_calc.csv
+✓ Saved: eda_results/full_feature_importance_plot.png
+
+======================================================================
+STEP 5: Ablation — Gini WITH vs. WITHOUT ps_calc_* (5-fold CV, Bootstrap CI)
+======================================================================
+
+Running ablation CV WITH ps_calc_*...
+  [WITH ps_calc_*] Fold 1 | Gini: 0.28158
+  [WITH ps_calc_*] Fold 2 | Gini: 0.26121
+  [WITH ps_calc_*] Fold 3 | Gini: 0.26977
+  [WITH ps_calc_*] Fold 4 | Gini: 0.26996
+  [WITH ps_calc_*] Fold 5 | Gini: 0.26408
+  [WITH ps_calc_*] Bootstrap Gini: 0.26948 (95% CI: [0.26161, 0.27737])
+
+Running ablation CV WITHOUT ps_calc_*...
+  [WITHOUT ps_calc_*] Fold 1 | Gini: 0.28157
+  [WITHOUT ps_calc_*] Fold 2 | Gini: 0.26025
+  [WITHOUT ps_calc_*] Fold 3 | Gini: 0.27062
+  [WITHOUT ps_calc_*] Fold 4 | Gini: 0.26923
+  [WITHOUT ps_calc_*] Fold 5 | Gini: 0.26247
+  [WITHOUT ps_calc_*] Bootstrap Gini: 0.26903 (95% CI: [0.26127, 0.27707])
+
+======================================================================
+ABLATION SUMMARY
+======================================================================
+            label gini_mean gini_ci_lower gini_ci_upper
+   WITH ps_calc_*   0.26948       0.26161       0.27737
+WITHOUT ps_calc_*   0.26903       0.26127       0.27707
+
+Gini(WITH) - Gini(WITHOUT) = +0.00046
+95% CIs overlap: True (no statistically detectable difference)
+✓ Saved: eda_results/ps_calc_ablation_gini_comparison.csv
+
+======================================================================
+PHASE 0 EDA COMPLETED — all evidence saved to eda_results/
+======================================================================
+PS C:\Users\derya\Desktop\Derya2\Arcada MIND master\Thesis\~Code\~PortoSeguroInsurance> python .\run_pipeline.py
+[2026-09-26 13:59:23] ======================================================================
+[2026-09-26 13:59:23] PIPELINE RUN START — 6 stage(s) scheduled
+[2026-09-26 13:59:23] ======================================================================
+[2026-09-26 13:59:23] ▶️  STAGE START: Preprocessing (01_Preprocessing.py) — Data cleaning, encoding, artifact generation
+======================================================================
+PHASE 1: EDA, Preprocessing & Feature Engineering
+======================================================================
+
+--- Loading Data ---
+Train shape: (595212, 59)
+Test shape: (892816, 58)
+
+Target distribution (Train):
+target
+0    0.963552
+1    0.036448
+Name: proportion, dtype: float64
+
+Feature Types:
+  Binary features:     17
+  Categorical features: 14
+  Continuous features: 26
+  Calculation features (to drop): 20
+
+--- Data Cleaning ---
+Dropped 20 ps_calc columns
+
+Missing values in train:
+Series([], dtype: int64)
+Final train shape: (595212, 37), (595212,)
+
+--- Categorical Encoding ---
+Converted 13 columns to 'category' dtype
+
+Identified 14 candidate columns for rare-category mapping (categorical + ordinal). Thresholding is deferred to each downstream CV fold — see preprocessing_utils.py.
+
+--- Feature Statistics ---
+
+Continuous features - min/max/mean:
+      ps_ind_01  ps_ind_03  ps_ind_14  ps_ind_15  ps_reg_01  ps_reg_02  ps_reg_03  ps_car_11  ps_car_12  ps_car_13  ps_car_14  ps_car_15
+min         0.0      0.000      0.000        0.0      0.000      0.000     -1.000     -1.000     -1.000      0.251     -1.000      0.000
+max         7.0     11.000      4.000       13.0      0.900      1.800      4.038      3.000      1.265      3.721      0.636      3.742
+mean        1.9      4.423      0.012        7.3      0.611      0.439      0.551      2.346      0.380      0.813      0.276      3.066
+
+--- Processing Test Set ---
+Test features shape: (892816, 37)
+Columns match training set: True
+
+--- Saving Preprocessed Data ---
+✓ X_preprocessed.csv ((595212, 37))
+✓ y_preprocessed.csv ((595212,))
+✓ test_preprocessed.csv ((892816, 37))
+✓ metadata.pkl
+✓ categorical_cols.pkl
+✓ cols_for_rare.pkl (candidate columns only — thresholding done fold-by-fold downstream)
+
+--- Creating convenience copies ---
+✓ Copied files to root directory for Phase 2
+
+--- Memory Cleanup ---
+✓ Memory cleared
+
+======================================================================
+PHASE 1 COMPLETED SUCCESSFULLY
+======================================================================
+
+Preprocessed data saved. You can now run Phase 2:
+  python 02a_BaselineModels.py
+[2026-09-26 13:59:38] STAGE COMPLETE: Preprocessing in 15.1s
+[2026-09-26 13:59:38] ▶️  STAGE START: Baseline Models (02a_BaselineModels.py) — Baseline models: Random Forest, LGBM, XGBoost
+Loading preprocessed data...
+Using ALL preprocessed features. X shape: (595212, 37), y shape: (595212,)
+
+======================================================================
+CV STARTING FOR: LightGBM
+======================================================================
+Fold 1 | Gini: 0.28648 | PR-AUC: 0.06732 | Recall@1%: 0.03618
+Fold 2 | Gini: 0.27614 | PR-AUC: 0.06513 | Recall@1%: 0.03273
+Fold 3 | Gini: 0.28236 | PR-AUC: 0.06789 | Recall@1%: 0.03596
+Fold 4 | Gini: 0.28072 | PR-AUC: 0.06615 | Recall@1%: 0.03780
+Fold 5 | Gini: 0.27151 | PR-AUC: 0.06308 | Recall@1%: 0.03319
+
+Calculating Bootstrap 95% CI for LightGBM (200 iterations)...
+
+======================================================================
+CV STARTING FOR: Random Forest
+======================================================================
+Fold 1 | Gini: 0.25976 | PR-AUC: 0.06173 | Recall@1%: 0.03204
+Fold 2 | Gini: 0.24548 | PR-AUC: 0.06019 | Recall@1%: 0.03273
+Fold 3 | Gini: 0.24799 | PR-AUC: 0.06155 | Recall@1%: 0.03043
+Fold 4 | Gini: 0.25312 | PR-AUC: 0.06146 | Recall@1%: 0.03065
+Fold 5 | Gini: 0.23971 | PR-AUC: 0.05885 | Recall@1%: 0.03157
+
+Calculating Bootstrap 95% CI for Random Forest (200 iterations)...
+
+======================================================================
+CV STARTING FOR: XGBoost
+======================================================================
+Fold 1 | Gini: 0.28443 | PR-AUC: 0.06713 | Recall@1%: 0.03549
+Fold 2 | Gini: 0.27303 | PR-AUC: 0.06545 | Recall@1%: 0.03365
+Fold 3 | Gini: 0.27429 | PR-AUC: 0.06689 | Recall@1%: 0.03435
+Fold 4 | Gini: 0.27358 | PR-AUC: 0.06416 | Recall@1%: 0.03319
+Fold 5 | Gini: 0.26744 | PR-AUC: 0.06222 | Recall@1%: 0.02904
+
+Calculating Bootstrap 95% CI for XGBoost (200 iterations)...
+
+=====================================================================================
+FINAL BASELINE COMPARISON
+=====================================================================================
+        Model Gini Index       Gini 95% CI Recall @ Top 1%  PR-AUC
+     LightGBM   0.279460 [0.2714 - 0.2866]        0.035171 0.06591
+Random Forest   0.248949 [0.2413 - 0.2556]        0.031483 0.06076
+      XGBoost   0.274434 [0.2668 - 0.2819]        0.033143 0.06517
+
+✓ SUCCESS: Baseline metrics backup generated dynamically for Ablation Study.
+[2026-09-26 14:08:39] STAGE COMPLETE: Baseline Models in 541.3s
+[2026-09-26 14:08:39] ▶️  STAGE START: Hyperparameter Tuning (02b_HyperparameterTuning.py) — Optuna/grid-search hyperparameter sweep
+Loading preprocessed data for hyperparameter tuning...
+
+Data shapes successfully realigned -> X: (595212, 37), y: (595212,)
+
+Starting Bayesian Optimization via Optuna (30 Trials)...
+This will evaluate 30 different parameter combinations using 5-Fold CV.
+Trial 00/30 | Current Trial Gini: 0.28102 | Best Gini So Far: 0.28102
+Trial 01/30 | Current Trial Gini: 0.28077 | Best Gini So Far: 0.28102
+Trial 02/30 | Current Trial Gini: 0.27817 | Best Gini So Far: 0.28102
+Trial 03/30 | Current Trial Gini: 0.27968 | Best Gini So Far: 0.28102
+Trial 04/30 | Current Trial Gini: 0.27861 | Best Gini So Far: 0.28102
+Trial 05/30 | Current Trial Gini: 0.28140 | Best Gini So Far: 0.28140
+Trial 06/30 | Current Trial Gini: 0.28071 | Best Gini So Far: 0.28140
+Trial 07/30 | Current Trial Gini: 0.27798 | Best Gini So Far: 0.28140
+Trial 08/30 | Current Trial Gini: 0.28233 | Best Gini So Far: 0.28233
+Trial 09/30 | Current Trial Gini: 0.27850 | Best Gini So Far: 0.28233
+Trial 10/30 | Current Trial Gini: 0.28220 | Best Gini So Far: 0.28233
+Trial 11/30 | Current Trial Gini: 0.28213 | Best Gini So Far: 0.28233
+Trial 12/30 | Current Trial Gini: 0.28158 | Best Gini So Far: 0.28233
+Trial 13/30 | Current Trial Gini: 0.28174 | Best Gini So Far: 0.28233
+Trial 14/30 | Current Trial Gini: 0.28239 | Best Gini So Far: 0.28239
+Trial 15/30 | Current Trial Gini: 0.28062 | Best Gini So Far: 0.28239
+Trial 16/30 | Current Trial Gini: 0.28183 | Best Gini So Far: 0.28239
+Trial 17/30 | Current Trial Gini: 0.28190 | Best Gini So Far: 0.28239
+Trial 18/30 | Current Trial Gini: 0.28222 | Best Gini So Far: 0.28239
+Trial 19/30 | Current Trial Gini: 0.28209 | Best Gini So Far: 0.28239
+Trial 20/30 | Current Trial Gini: 0.28046 | Best Gini So Far: 0.28239
+Trial 21/30 | Current Trial Gini: 0.28245 | Best Gini So Far: 0.28245
+Trial 22/30 | Current Trial Gini: 0.28196 | Best Gini So Far: 0.28245
+Trial 23/30 | Current Trial Gini: 0.27695 | Best Gini So Far: 0.28245
+Trial 24/30 | Current Trial Gini: 0.28177 | Best Gini So Far: 0.28245
+Trial 25/30 | Current Trial Gini: 0.28097 | Best Gini So Far: 0.28245
+Trial 26/30 | Current Trial Gini: 0.28136 | Best Gini So Far: 0.28245
+Trial 27/30 | Current Trial Gini: 0.28171 | Best Gini So Far: 0.28245
+Trial 28/30 | Current Trial Gini: 0.28114 | Best Gini So Far: 0.28245
+Trial 29/30 | Current Trial Gini: 0.28129 | Best Gini So Far: 0.28245
+
+======================================================================
+HYPERPARAMETER TUNING COMPLETED
+======================================================================
+Best 5-Fold CV Gini Index: 0.282453
+
+Best Hyperparameters Found:
+  n_estimators: 600
+  learning_rate: 0.02675
+  num_leaves: 12
+  max_depth: 7
+  min_child_samples: 700
+  subsample: 0.73305
+  colsample_bytree: 0.75773
+  reg_alpha: 0.05318
+  reg_lambda: 0.04542
+
+Average early-stopped tree count for best trial: 518
+(Phase 3a should train the final model with this many trees, WITHOUT early stopping, to match this reported Gini.)
+
+✓ Best parameters saved to: model_results\best_lgbm_params.pkl
+[2026-09-26 14:36:49] STAGE COMPLETE: Hyperparameter Tuning in 1689.5s
+[2026-09-26 14:36:49] ▶️  STAGE START: Training + Calibration (03a_ModelTraining_Bootstrap.py) — Final model, isotonic calibration, bootstrap CIs
+Loading preprocessed data...
+Loaded 14 candidate columns for rare-category mapping (thresholding deferred to each CV fold)
+X shape: (595212, 37), y shape: (595212,)
+Test features shape: (892816, 37)
+
+======================================================================
+OPTUNA PARAMETERS USED IN TRAINING
+======================================================================
+n_estimators: 600
+learning_rate: 0.026752637104995303
+num_leaves: 12
+max_depth: 7
+min_child_samples: 700
+subsample: 0.7330495894728128
+colsample_bytree: 0.7577296605999717
+reg_alpha: 0.053177017565620384
+reg_lambda: 0.04541547413447501
+n_estimators_effective (reserved for final model only): 518
+======================================================================
+======================================================================
+PHASE 3.1: 5-Fold Cross-Validation with Isotonic Calibration
+======================================================================
+
+--- Fold 1/5 ---
+  Training LightGBM...
+  File "C:\Users\derya\AppData\Local\Programs\Python\Python312\Lib\site-packages\joblib\externals\loky\backend\context.py", line 257, in _count_physical_cores
+    cpu_info = subprocess.run(
+               ^^^^^^^^^^^^^^^
+  File "C:\Users\derya\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\derya\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\derya\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[LightGBM] [Info] Number of positive: 13884, number of negative: 367051
+[LightGBM] [Info] Auto-choosing row-wise multi-threading, the overhead of testing was 0.010331 seconds.
+You can set `force_row_wise=true` to remove the overhead.
+And if memory is not enough, you can set `force_col_wise=true`.
+[LightGBM] [Info] Total Bins 1092
+[LightGBM] [Info] Number of data points in the train set: 380935, number of used features: 34
+[LightGBM] [Info] [binary:BoostFromScore]: pavg=0.036447 -> initscore=-3.274764
+[LightGBM] [Info] Start training from score -3.274764
+  Calibrating probabilities...
+  [Step 2 Raw Optimized] Gini: 0.28734 | PR-AUC: 0.06835
+  [Step 3 Calibrated   ] Gini: 0.28357 | Brier: 0.03476 | ECE: 0.00192
+
+--- Fold 2/5 ---
+  Training LightGBM...
+[LightGBM] [Info] Number of positive: 13884, number of negative: 367051
+[LightGBM] [Info] Auto-choosing row-wise multi-threading, the overhead of testing was 0.010407 seconds.
+You can set `force_row_wise=true` to remove the overhead.
+And if memory is not enough, you can set `force_col_wise=true`.
+[LightGBM] [Info] Total Bins 1089
+[LightGBM] [Info] Number of data points in the train set: 380935, number of used features: 34
+[LightGBM] [Info] [binary:BoostFromScore]: pavg=0.036447 -> initscore=-3.274764
+[LightGBM] [Info] Start training from score -3.274764
+  Calibrating probabilities...
+  [Step 2 Raw Optimized] Gini: 0.27801 | PR-AUC: 0.06691
+  [Step 3 Calibrated   ] Gini: 0.27640 | Brier: 0.03475 | ECE: 0.00120
+
+--- Fold 3/5 ---
+  Training LightGBM...
+[LightGBM] [Info] Number of positive: 13885, number of negative: 367051
+[LightGBM] [Info] Auto-choosing row-wise multi-threading, the overhead of testing was 0.011238 seconds.
+You can set `force_row_wise=true` to remove the overhead.
+And if memory is not enough, you can set `force_col_wise=true`.
+[LightGBM] [Info] Total Bins 1091
+[LightGBM] [Info] Number of data points in the train set: 380936, number of used features: 34
+[LightGBM] [Info] [binary:BoostFromScore]: pavg=0.036450 -> initscore=-3.274692
+[LightGBM] [Info] Start training from score -3.274692
+  Calibrating probabilities...
+  [Step 2 Raw Optimized] Gini: 0.28100 | PR-AUC: 0.06713
+  [Step 3 Calibrated   ] Gini: 0.27896 | Brier: 0.03473 | ECE: 0.00187
+
+--- Fold 4/5 ---
+  Training LightGBM...
+[LightGBM] [Info] Number of positive: 13884, number of negative: 367052
+[LightGBM] [Info] Auto-choosing row-wise multi-threading, the overhead of testing was 0.007580 seconds.
+You can set `force_row_wise=true` to remove the overhead.
+And if memory is not enough, you can set `force_col_wise=true`.
+[LightGBM] [Info] Total Bins 1087
+[LightGBM] [Info] Number of data points in the train set: 380936, number of used features: 34
+[LightGBM] [Info] [binary:BoostFromScore]: pavg=0.036447 -> initscore=-3.274766
+[LightGBM] [Info] Start training from score -3.274766
+  Calibrating probabilities...
+  [Step 2 Raw Optimized] Gini: 0.27754 | PR-AUC: 0.06628
+  [Step 3 Calibrated   ] Gini: 0.27715 | Brier: 0.03476 | ECE: 0.00173
+
+--- Fold 5/5 ---
+  Training LightGBM...
+[LightGBM] [Info] Number of positive: 13884, number of negative: 367052
+[LightGBM] [Info] Auto-choosing row-wise multi-threading, the overhead of testing was 0.011510 seconds.
+You can set `force_row_wise=true` to remove the overhead.
+And if memory is not enough, you can set `force_col_wise=true`.
+[LightGBM] [Info] Total Bins 1090
+[LightGBM] [Info] Number of data points in the train set: 380936, number of used features: 34
+[LightGBM] [Info] [binary:BoostFromScore]: pavg=0.036447 -> initscore=-3.274766
+[LightGBM] [Info] Start training from score -3.274766
+  Calibrating probabilities...
+  [Step 2 Raw Optimized] Gini: 0.26883 | PR-AUC: 0.06366
+  [Step 3 Calibrated   ] Gini: 0.26768 | Brier: 0.03481 | ECE: 0.00201
+
+======================================================================
+FINAL CV RESULTS (After Calibration)
+======================================================================
+Overall Gini Index   : 0.27647
+Mean Brier Score     : 0.03476
+Mean ECE Score       : 0.00174
+Mean PR-AUC          : 0.06679
+Mean Recall@1%       : 0.03582
+======================================================================
+
+======================================================================
+PHASE 3.2: Bootstrap Analysis (1000 iterations)
+======================================================================
+Running 1000 bootstrap iterations...
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1000/1000 [02:10<00:00,  7.64it/s]
+
+======================================================================
+95% CONFIDENCE INTERVALS (Bootstrap)
+----------------------------------------------------------------------
+Gini Index  : 0.27669 (95% CI: [0.26927, 0.28374])
+Brier Score : 0.03476 (95% CI: [0.03435, 0.03519])
+ECE         : 0.00081 (95% CI: [0.00048, 0.00117])
+======================================================================
+
+Saving results to disk...
+✓ Saved calibrated_predictor.pkl — the actual predictor behind OOF validation and submission_final.csv
+  Sanity check — max |bundle prediction - test_preds_calibrated.npy|: 0.00e+00
+
+==========================================================================================
+FINAL ABLATION STUDY & MODEL EVOLUTION
+==========================================================================================
+✓ SUCCESS: Baseline metrics loaded dynamically from disk.
+                        Experiment Step Gini Index  PR-AUC Recall@1% Improvement (Δ)
+  1. LightGBM Baseline (Default Params)    0.27946 0.06591   0.03517        +0.00000
+  2. LightGBM Optimized (Optuna Tuning)    0.27854 0.06647   0.03531        -0.00092
+3. LightGBM Final (Tuned + Calibration)    0.27647 0.06679   0.03582        -0.00299
+==========================================================================================
+✓ Saved fully dynamic ablation study summary to: model_results/ablation_study.csv
+
+Creating Kaggle submission...
+✓ Submission saved to 'model_results/submission_final.csv'
+
+Training final production model on full dataset...
+Using n_estimators=518 (Optuna's early-stopped average) for the final model.
+[LightGBM] [Info] Number of positive: 21694, number of negative: 573518
+[LightGBM] [Info] Auto-choosing row-wise multi-threading, the overhead of testing was 0.017556 seconds.
+You can set `force_row_wise=true` to remove the overhead.
+And if memory is not enough, you can set `force_col_wise=true`.
+[LightGBM] [Info] Total Bins 1088
+[LightGBM] [Info] Number of data points in the train set: 595212, number of used features: 35
+[LightGBM] [Info] [binary:BoostFromScore]: pavg=0.036448 -> initscore=-3.274754
+[LightGBM] [Info] Start training from score -3.274754
+
+SAVING FINAL MODEL
+Best iteration: 0
+Num trees: 518
+✓ Saved final_model.pkl
+
+Generating calibration plots...
+✓ Saved reliability diagram to: model_results\lgbm_reliability_diagram.png
+✓ Zoomed reliability diagram saved to: model_results\lgbm_reliability_diagram_zoomed.png
+
+======================================================================
+PHASE 03a COMPLETED SUCCESSFULLY
+======================================================================
+[2026-09-26 14:39:59] STAGE COMPLETE: Training + Calibration in 190.4s
+[2026-09-26 14:39:59] ▶️  STAGE START: SHAP Interpretability (03b_SHAP_Interpretability.py) — TreeSHAP global/local explainability
+======================================================================
+PHASE 3b: SHAP Interpretability Analysis
+======================================================================
+
+Loading preprocessed data...
+
+Loading FINAL production model from Phase 03a...
+
+MODEL LOADED FROM:
+model_results/final_model.pkl
+Model type: <class 'lightgbm.sklearn.LGBMClassifier'>
+n_estimators_: 518
+Best iteration: 0
+Num trees: 518
+
+Applying the same feature representation used in Phase 03a...
+Converted 14 categorical columns to 'category' dtype.
+ps_car_11_cat handling: native LightGBM categorical feature (NO target encoding)
+
+X shape: (595212, 37)
+Final model successfully loaded.
+
+Validating feature compatibility...
+MODEL FEATURE COUNT: 37
+DATA FEATURE COUNT : 37
+✓ Feature count matches.
+✓ Feature order matches final model.
+
+Preparing sample data for SHAP analysis (1000 random samples)...
+✓ Selected 1000 observations using random_state=42.
+
+Converting SHAP input to NumPy...
+✓ Sample ready: 1000 rows × 37 features
+
+FIRST 10 MODEL FEATURES:
+['ps_ind_01', 'ps_ind_02_cat', 'ps_ind_03', 'ps_ind_04_cat', 'ps_ind_05_cat', 'ps_ind_06_bin', 'ps_ind_07_bin', 'ps_ind_08_bin', 'ps_ind_09_bin', 'ps_ind_10_bin']
+
+FIRST 10 SHAP FEATURES:
+['ps_ind_01', 'ps_ind_02_cat', 'ps_ind_03', 'ps_ind_04_cat', 'ps_ind_05_cat', 'ps_ind_06_bin', 'ps_ind_07_bin', 'ps_ind_08_bin', 'ps_ind_09_bin', 'ps_ind_10_bin']
+✓ Model and SHAP feature order verified.
+
+Calculating SHAP values...
+(This may take 1-3 minutes depending on your hardware)
+
+✓ SHAP values calculated.
+
+Creating SHAP Summary Plot (Dot)...
+[OK] Saved: 01_shap_summary_dot.png
+Creating SHAP Summary Plot (Bar)...
+[OK] Saved: 02_shap_summary_bar.png
+Creating Feature Importance Table...
+
+Top 15 Most Important Features (by SHAP):
+      Feature  Mean |SHAP|  Mean SHAP
+ps_ind_05_cat     0.433567   0.432582
+ps_car_07_cat     0.196512   0.196512
+ps_car_09_cat     0.161981   0.155787
+    ps_car_13     0.136667  -0.001903
+ps_car_01_cat     0.087009   0.078605
+ps_ind_17_bin     0.077061  -0.007623
+    ps_ind_03     0.075084   0.007642
+    ps_reg_03     0.068698   0.006250
+    ps_ind_15     0.062899   0.002515
+ps_ind_06_bin     0.058324  -0.001125
+ps_car_04_cat     0.042469   0.041426
+ps_car_06_cat     0.040093  -0.001564
+    ps_reg_02     0.037021   0.003989
+    ps_ind_01     0.033757   0.004651
+ps_ind_16_bin     0.032927  -0.002430
+[OK] Saved: shap_feature_importance.csv
+
+Creating Top 20 Feature Importance Bar Plot...
+[OK] Saved: 02b_shap_top20_bar.png
+
+Creating SHAP Dependence Plots for top 6 features...
+  [OK] 1/6: ps_ind_05_cat
+  [OK] 2/6: ps_car_07_cat
+  [OK] 3/6: ps_car_09_cat
+  [OK] 4/6: ps_car_13
+  [OK] 5/6: ps_car_01_cat
+  [OK] 6/6: ps_ind_17_bin
+
+Creating SHAP Force Plot for sample prediction...
+[OK] Saved: 04_shap_force_plot_sample.png
+
+Creating SHAP Waterfall Plot for sample prediction...
+[OK] Saved: 05_shap_waterfall_plot_sample.png
+
+Saving SHAP values and sample data...
+✓ SHAP values saved for future analysis
+
+Cleaning up memory...
+
+======================================================================
+PHASE 03b COMPLETED SUCCESSFULLY
+======================================================================
+
+All outputs saved to: model_results/shap_analysis/
+
+Generated files:
+  1. 01_shap_summary_dot.png           - Feature impact overview
+  2. 02_shap_summary_bar.png           - Feature importance ranking
+  3. 02b_shap_top20_bar.png            - Top 20 bar chart
+  4. shap_feature_importance.csv       - Importance values table
+  5. 03_shap_dependence_*.png          - Top 6 feature relationships
+  6. 04_shap_force_plot_sample.png     - Single prediction breakdown
+  7. 05_shap_waterfall_plot_sample.png - Decision path visualization
+  8. shap_values.npy                   - Raw SHAP values
+  9. X_sample_for_shap.csv/.npy        - Sample used for SHAP
+[2026-09-26 14:40:37] STAGE COMPLETE: SHAP Interpretability in 38.0s
+[2026-09-26 14:40:37] ▶️  STAGE START: Business Impact Simulation (03c_Business_Impact_Simulation.py) — Threshold/cost-benefit simulation
+Loading predictions...
+Loaded 892816 predictions and 892816 test IDs
+
+Calculating business impact metrics...
+Using effectiveness=0.25, uptake_rate=0.7 (illustrative placeholders — see comments in main() before treating these numbers as real).
+Saved sensitivity results to: model_results/business_impact_sensitivity.csv
+
+Assumptions used — effectiveness=0.25, uptake_rate=0.70 (illustrative placeholders; calibrate against real pilot/actuarial data before relying on these numbers for a budget decision).
+
+Sample results (Total Expected Saving — realistic scenario, with effectiveness/uptake discount applied):
+k_percent                       0.005          0.010         0.020
+saved_loss action_cost                                            
+500        25           -51847.815245 -120268.576686 -2.688649e+05
+           50          -163447.815245 -343468.576686 -7.152649e+05
+           100         -386647.815245 -789868.576686 -1.608065e+06
+1000       25             7904.369511  -17337.153372 -9.132985e+04
+           50          -103695.630489 -240537.153372 -5.377298e+05
+           100         -326895.630489 -686937.153372 -1.430530e+06
+2500       25           187160.923777  291457.116571  4.412754e+05
+           50            75560.923777   68257.116571 -5.124623e+03
+           100         -147639.076223 -378142.883429 -8.979246e+05
+
+For comparison — Total Expected Saving (NAIVE scenario: assumes every intervention works and every customer accepts it; NOT a credible standalone estimate, shown only to size the effect of the effectiveness/uptake assumptions above):
+k_percent                      0.005         0.010         0.020
+saved_loss action_cost                                          
+500        25           2.298411e+05  3.649796e+05  5.680861e+05
+           50           1.182411e+05  1.417796e+05  1.216861e+05
+           100         -1.049589e+05 -3.046204e+05 -7.711139e+05
+1000       25           5.712821e+05  9.531591e+05  1.582572e+06
+           50           4.596821e+05  7.299591e+05  1.136172e+06
+           100          2.364821e+05  2.835591e+05  2.433723e+05
+2500       25           1.595605e+06  2.717698e+06  4.626031e+06
+           50           1.484005e+06  2.494498e+06  4.179631e+06
+           100          1.260805e+06  2.048098e+06  3.286831e+06
+
+Generating heatmaps...
+Saved heatmap: model_results/business_impact_heatmaps/heatmap_total_saving_5.png
+Saved heatmap: model_results/business_impact_heatmaps/heatmap_total_saving_10.png
+Saved heatmap: model_results/business_impact_heatmaps/heatmap_total_saving_20.png
+
+Business impact sensitivity analysis complete!
+[2026-09-26 14:40:40] STAGE COMPLETE: Business Impact Simulation in 3.6s
+[2026-09-26 14:40:40] ======================================================================
+[2026-09-26 14:40:40] PIPELINE RUN COMPLETE — total elapsed: 41.3 minutes
+[2026-09-26 14:40:40] ======================================================================

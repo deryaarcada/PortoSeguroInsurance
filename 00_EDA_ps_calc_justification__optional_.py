@@ -34,8 +34,9 @@ import seaborn as sns
 from scipy.stats import chi2_contingency
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_auc_score
-from sklearn.utils import resample
 import lightgbm as lgb
+
+from metrics import bootstrap_gini_ci
 
 warnings.filterwarnings('ignore')
 
@@ -90,7 +91,7 @@ def cramers_v(confusion_matrix):
     n = confusion_matrix.sum().sum()
     phi2 = chi2 / n
     r, k = confusion_matrix.shape
-    phi2_corr = max(0, phi2 - ((k - 1) * (r - 1)) / (n - 1))
+    phi2_corr = max(0, phi2 -  ((k - 1) * (r - 1)) / (n - 1))
     r_corr = r - ((r - 1) ** 2) / (n - 1)
     k_corr = k - ((k - 1) ** 2) / (n - 1)
     denom = min((k_corr - 1), (r_corr - 1))
@@ -245,15 +246,10 @@ print("STEP 5: Ablation — Gini WITH vs. WITHOUT ps_calc_* (5-fold CV, Bootstra
 print("=" * 70)
 
 
-def bootstrap_gini_ci(y_true, y_probs, n_iterations=200):
-    stats = []
-    y_true = np.array(y_true)
-    y_probs = np.array(y_probs)
-    for i in range(n_iterations):
-        y_true_r, y_probs_r = resample(y_true, y_probs, random_state=i)
-        auc = roc_auc_score(y_true_r, y_probs_r)
-        stats.append(2 * auc - 1)
-    return np.mean(stats), np.percentile(stats, 2.5), np.percentile(stats, 97.5)
+# NOTE: bootstrap_gini_ci() previously lived here as a local copy
+# (near-identical to the one in 02a_BaselineModels.py). It now lives in
+# metrics.py, the single canonical source, so both scripts compute the
+# bootstrap Gini CI identically.
 
 
 def run_cv_gini(X, y, cat_cols, label, n_splits=5):

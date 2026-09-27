@@ -110,7 +110,8 @@ print(f"Converted {len(current_cat_features)} columns to 'category' dtype")
 
 
 # ============================================================================
-# Rare class handling (learn from TRAIN only and apply to val/test later)
+# Rare-category candidate columns (NOTE: the actual mapping is NOT learned
+# here anymore — see explanation below)
 # ============================================================================
 # Identify ordinal-like columns (heuristic: column name contains 'ord')
 ordinal_cols = [c for c in X.columns if 'ord' in c]
@@ -118,21 +119,29 @@ ordinal_cols = [c for c in X.columns if 'ord' in c]
 # Candidate columns to check for rare classes: categorical and ordinal columns
 cols_for_rare = [c for c in categorical_cols if c in X.columns] + [c for c in ordinal_cols if c in X.columns and c not in categorical_cols]
 
-rare_class_map = {}
-rare_threshold = 0.01  # classes with <1% frequency considered rare
-for col in cols_for_rare:
-    try:
-        freqs = X[col].value_counts(normalize=True)
-        rare_values = freqs[freqs < rare_threshold].index.tolist()
-        if len(rare_values) > 0:
-            rare_class_map[col] = rare_values
-            # Replace rare values in training set with sentinel (-1)
-            X[col] = X[col].replace(rare_values, -1)
-    except Exception:
-        # skip columns that cannot be processed
-        continue
-
-print(f"Applied rare class mapping for {len(rare_class_map)} columns (learned from train)")
+# ----------------------------------------------------------------------
+# FOLD-SAFE PREPROCESSING FIX:
+# This script used to learn the rare-category mapping (which values are
+# rare, i.e. <1% frequency) from the FULL training set right here, before
+# any cross-validation split existed downstream. That is not target
+# leakage (no label information is involved), but it does mean each CV
+# validation fold's rows helped decide which categories count as "rare"
+# for the very fold they are later held out from, a mild preprocessing
+# leakage.
+#
+# The fix: only the CANDIDATE column list (`cols_for_rare`, just column
+# names — no data statistics) is decided here and saved for downstream
+# scripts to use. The actual thresholding (which specific values are rare)
+# is now learned separately, INSIDE each CV fold's training split, in
+# 02a_BaselineModels.py, 02b_HyperparameterTuning.py, and
+# 03a_ModelTraining_Bootstrap.py, via the shared fit_rare_map() /
+# apply_rare_map() helpers in preprocessing_utils.py. X_preprocessed.csv
+# and test_preprocessed.csv below therefore do NOT have rare categories
+# collapsed yet, that happens fold-by-fold downstream.
+# ----------------------------------------------------------------------
+print(f"\nIdentified {len(cols_for_rare)} candidate columns for rare-category "
+      f"mapping (categorical + ordinal). Thresholding is deferred to each "
+      f"downstream CV fold — see preprocessing_utils.py.")
 
 # ============================================================================
 # 5. FEATURE SCALING 
@@ -157,10 +166,12 @@ test_features = test_features.drop(columns=ps_calc_cols)
 # Ensure column order matches training set
 test_features = test_features[X.columns]
 
-# Apply training-derived rare class mappings to test set (do NOT recompute using test)
-for col, rare_values in rare_class_map.items():
-    if col in test_features.columns:
-        test_features[col] = test_features[col].replace(rare_values, -1)
+# NOTE: rare-category mapping is intentionally NOT applied here anymore.
+# Each fold's model in the downstream CV loops (02a/02b/03a) fits its own
+# rare-category map on that fold's training partition and applies it to
+# both that fold's validation rows and (in 03a) the test set, so the
+# mapping used to score `test_features` is always consistent with the
+# mapping the corresponding model was trained under. See preprocessing_utils.py.
 
 # Convert categorical columns to category dtype
 for col in current_cat_features:
@@ -185,20 +196,21 @@ metadata = {
     'categorical_cols': categorical_cols,
     'continuous_cols': continuous_cols,
     'current_cat_features': current_cat_features,
-    'rare_class_map': rare_class_map,
+    'cols_for_rare': cols_for_rare,
     'X_shape': X.shape,
     'y_shape': y.shape,
     'test_shape': test_features.shape
 }
 joblib.dump(metadata, f'{output_dir}/metadata.pkl')
 joblib.dump(categorical_cols, f'{output_dir}/categorical_cols.pkl')
-joblib.dump(rare_class_map, f'{output_dir}/rare_class_map.pkl')
+joblib.dump(cols_for_rare, f'{output_dir}/cols_for_rare.pkl')
 
 print(f"✓ X_preprocessed.csv ({X.shape})")
 print(f"✓ y_preprocessed.csv ({y.shape})")
 print(f"✓ test_preprocessed.csv ({test_features.shape})")
 print(f"✓ metadata.pkl")
 print(f"✓ categorical_cols.pkl")
+print(f"✓ cols_for_rare.pkl (candidate columns only — thresholding done fold-by-fold downstream)")
 
 # ============================================================================
 # 8. CREATE SYMLINKS FOR PHASE 2 
@@ -213,7 +225,7 @@ shutil.copy(f'{output_dir}/X_preprocessed.csv', 'X_preprocessed.csv')
 shutil.copy(f'{output_dir}/y_preprocessed.csv', 'y_preprocessed.csv')
 shutil.copy(f'{output_dir}/test_preprocessed.csv', 'test_preprocessed.csv')
 shutil.copy(f'{output_dir}/categorical_cols.pkl', 'categorical_cols.pkl')
-shutil.copy(f'{output_dir}/rare_class_map.pkl', 'rare_class_map.pkl')
+shutil.copy(f'{output_dir}/cols_for_rare.pkl', 'cols_for_rare.pkl')
 
 print("✓ Copied files to root directory for Phase 2")
 

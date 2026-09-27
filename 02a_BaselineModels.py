@@ -17,10 +17,12 @@ import pandas as pd
 import numpy as np
 import joblib
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import roc_auc_score, precision_recall_curve, auc as sklearn_auc
-from sklearn.utils import resample
+from sklearn.metrics import roc_auc_score
 from sklearn.ensemble import RandomForestClassifier
 import lightgbm as lgb
+
+from metrics import bootstrap_gini_ci, evaluate_ranking
+from preprocessing_utils import fit_rare_map, apply_rare_map
 
 warnings.filterwarnings('ignore')
 
@@ -30,42 +32,11 @@ try:
 except ImportError:
     xgb_available = False
 
-
-def bootstrap_gini_ci(y_true, y_probs, n_iterations=200):
-    """
-    A function that calculates the Gini using the Bootstrap method for a 95% Confidence Interval (CI).
-    """
-    stats = []
-    y_true = np.array(y_true)
-    y_probs = np.array(y_probs)
-
-    for i in range(n_iterations):
-        # Resampling
-        y_true_resample, y_probs_resample = resample(y_true, y_probs, random_state=i)
-
-        # Gini calculation (2 * AUC - 1)
-        auc_boot = roc_auc_score(y_true_resample, y_probs_resample)
-        gini_boot = 2 * auc_boot - 1
-        stats.append(gini_boot)
-
-    # %95 Confidence Interval Limits (2.5 and 97.5 percentiles)
-    lower = np.percentile(stats, 2.5)
-    upper = np.percentile(stats, 97.5)
-    return np.mean(stats), lower, upper
-
-
-def evaluate_ranking(y_true, y_probs, k_percent_list=[0.01]):
-    results = {}
-    precision, recall, _ = precision_recall_curve(y_true, y_probs)
-    results['PR-AUC'] = sklearn_auc(recall, precision)
-    df_temp = pd.DataFrame({'y_true': y_true, 'y_probs': y_probs}).sort_values(by='y_probs', ascending=False)
-    n_total_positives = y_true.sum()
-    for k in k_percent_list:
-        n_cutoff = max(1, int(len(y_true) * k))
-        n_positives_at_k = df_temp.iloc[:n_cutoff]['y_true'].sum()
-        recall_at_k = n_positives_at_k / n_total_positives if n_total_positives > 0 else 0
-        results[f'Recall@{int(k * 100)}%'] = recall_at_k
-    return results
+# NOTE: bootstrap_gini_ci() and evaluate_ranking() previously lived here as
+# local copies (and a near-identical bootstrap_gini_ci was also duplicated in
+# 00_EDA_ps_calc_justification.py). They now live in metrics.py, the single
+# canonical source for these functions, so this script and the EDA script
+# always compute them the same way.
 
 
 def fit_target_encoding_map(cat_train, y_train, smoothing=10):
@@ -86,21 +57,21 @@ def load_data():
     X = pd.read_csv('X_preprocessed.csv')
     y = pd.read_csv('y_preprocessed.csv').iloc[:, 0]
     categorical_cols = joblib.load('categorical_cols.pkl')
+    cols_for_rare = joblib.load('cols_for_rare.pkl')
 
-    rare_map_path = 'rare_class_map.pkl'
-    if os.path.exists(rare_map_path):
-        rare_class_map = joblib.load(rare_map_path)
-        for col, rare_vals in rare_class_map.items():
-            if col in X.columns:
-                X[col] = X[col].replace(rare_vals, -1)
-        print('Applied training-derived rare class mapping')
-
+    # NOTE (fold-safe preprocessing fix): rare-category mapping used to be
+    # loaded here as a single global mapping (learned on the full training
+    # set in 01_Preprocessing.py) and applied before any CV split existed.
+    # That let each validation fold's own rows influence which categories
+    # counted as "rare" for that same fold. The mapping is now fit fresh,
+    # per fold, on only that fold's training partition — see run_cv_for_model()
+    # below and preprocessing_utils.py. X therefore stays un-mapped here.
     print(f'Using ALL preprocessed features. X shape: {X.shape}, y shape: {y.shape}')
 
-    return X, y, categorical_cols
+    return X, y, categorical_cols, cols_for_rare
 
 
-def run_cv_for_model(name, model_factory, X, y, categorical_cols, n_splits=5):
+def run_cv_for_model(name, model_factory, X, y, categorical_cols, cols_for_rare, n_splits=5):
     print('\n' + '=' * 70)
     print(f'CV STARTING FOR: {name}')
     print('=' * 70)
@@ -119,6 +90,13 @@ def run_cv_for_model(name, model_factory, X, y, categorical_cols, n_splits=5):
         X_val = X.iloc[val_idx].copy()
         y_train = y.iloc[train_idx]
         y_val = y.iloc[val_idx]
+
+        # FOLD-SAFE rare-category mapping: learned only from this fold's
+        # training rows, then applied to both this fold's train and
+        # validation rows. See preprocessing_utils.py.
+        fold_rare_map = fit_rare_map(X_train, cols_for_rare, threshold=0.01)
+        X_train = apply_rare_map(X_train, fold_rare_map)
+        X_val = apply_rare_map(X_val, fold_rare_map)
 
         current_cat_features = [c for c in categorical_cols if c in X_train.columns]
 
@@ -175,7 +153,7 @@ def run_cv_for_model(name, model_factory, X, y, categorical_cols, n_splits=5):
 
 
 def main():
-    X, y, categorical_cols = load_data()
+    X, y, categorical_cols, cols_for_rare = load_data()
 
     model_factories = [
         (
@@ -228,7 +206,7 @@ def main():
 
     baseline_results = []
     for name, factory in model_factories:
-        res = run_cv_for_model(name, factory, X, y, categorical_cols)
+        res = run_cv_for_model(name, factory, X, y, categorical_cols, cols_for_rare)
         baseline_results.append(res)
 
     print('\n' + '=' * 85)

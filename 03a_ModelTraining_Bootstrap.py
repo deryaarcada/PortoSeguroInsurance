@@ -17,12 +17,13 @@ import joblib
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 from sklearn.model_selection import StratifiedKFold, train_test_split
-from sklearn.metrics import roc_auc_score, brier_score_loss, precision_recall_curve, auc as sklearn_auc
+from sklearn.metrics import roc_auc_score, brier_score_loss
 from sklearn.calibration import IsotonicRegression
-from sklearn.utils import resample
 import lightgbm as lgb
+
+from metrics import calculate_ece, evaluate_ranking, calculate_bootstrap_ci
+from preprocessing_utils import fit_rare_map, apply_rare_map
  
 CONFIG = {
     "optuna_params_file":
@@ -35,49 +36,61 @@ warnings.filterwarnings('ignore')
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
- 
-def evaluate_ranking(y_true, y_probs, k_percent_list=[0.005, 0.01, 0.02]):
-    """Calculate PR-AUC and Recall@K metrics."""
-    results = {}
- 
-    # PR-AUC calculation
-    precision, recall, _ = precision_recall_curve(y_true, y_probs)
-    results['PR-AUC'] = sklearn_auc(recall, precision)
- 
-    # Recall@K calculation
-    df_temp = pd.DataFrame({'y_true': y_true, 'y_probs': y_probs}).sort_values(by='y_probs', ascending=False)
-    n_total_positives = y_true.sum()
- 
-    for k in k_percent_list:
-        n_cutoff = max(1, int(len(y_true) * k))
-        n_positives_at_k = df_temp.iloc[:n_cutoff]['y_true'].sum()
-        recall_at_k = n_positives_at_k / n_total_positives if n_total_positives > 0 else 0
-        results[f'Recall@{k*100}%'] = recall_at_k
- 
-    return results
- 
- 
-def calculate_ece(y_true, y_probs, n_bins=10):
-    """Calculate Expected Calibration Error."""
-    from sklearn.calibration import calibration_curve
+#
+# NOTE: evaluate_ranking() and calculate_ece() previously lived here as local
+# copies. They now live in metrics.py, the single stsndart source for these
+# functions. calculate_ece() in particular used to mix quantile bins with equal-width bin weights, 
+# which silently distorted the ECE estimate; that bug is fixed in metrics.py.
+# ============================================================================
 
-    prob_true, prob_pred = calibration_curve(y_true, y_probs, n_bins=n_bins, strategy='quantile')
-     #prob_true, prob_pred = calibration_curve(y_true, y_probs, n_bins=n_bins)
- 
-    bins = np.linspace(0, 1, n_bins + 1)
-    active_bin_indices = np.digitize(prob_pred, bins) - 1
-    active_bin_indices = np.clip(active_bin_indices, 0, n_bins - 1)
- 
-    all_bin_indices = np.digitize(y_probs, bins) - 1
-    all_bin_indices = np.clip(all_bin_indices, 0, n_bins - 1)
-    bin_counts = np.bincount(all_bin_indices, minlength=n_bins)
- 
-    actual_weights = bin_counts[active_bin_indices] / len(y_true)
-    ece = np.sum(np.abs(prob_true - prob_pred) * actual_weights)
- 
-    return ece
- 
- 
+def predict_calibrated_ensemble(bundle, X_new):
+    """
+    Score new data with the SAME predictor used for validation and the
+    Kaggle submission: the 5-fold LightGBM ensemble, each fold's raw score
+    passed through that fold's own isotonic calibrator, then averaged.
+
+    This is the counterpart to `model_results/calibrated_predictor.pkl`
+    (see the "SAVE THE REAL, CALIBRATED PREDICTOR" section below for why a
+    dedicated bundle exists). Loading `final_model.pkl` and calling
+    `.predict_proba()` on it does NOT reproduce these numbers — that file
+    is a single uncalibrated LightGBM model kept for interpretability
+    (SHAP) purposes only.
+
+    NOTE (fold-safe preprocessing fix): each fold's rare-category mapping is
+    now learned from only that fold's own training rows (see
+    preprocessing_utils.py), so it is no longer a single bundle-wide
+    mapping — it is stored per fold, inside each `fold_models` entry
+    ('rare_map' key), and applied with that fold's own model before scoring.
+
+    Parameters
+    ----------
+    bundle : dict
+        A bundle as saved to `calibrated_predictor.pkl`, with keys
+        'fold_models' (list of {'model', 'iso_reg', 'rare_map', 'fold'}),
+        'feature_names', 'categorical_features'.
+    X_new : pd.DataFrame
+        Raw (pre-rare-mapping) feature frame with the same columns as
+        training data, in any column order.
+
+    Returns
+    -------
+    np.ndarray
+        Calibrated probability of the positive class, one per row of X_new,
+        averaged across all fold models.
+    """
+    preds = np.zeros(len(X_new))
+    for fm in bundle['fold_models']:
+        X_scored = apply_rare_map(X_new, fm['rare_map'])
+        X_scored = X_scored[bundle['feature_names']]
+        for col in bundle['categorical_features']:
+            X_scored[col] = X_scored[col].astype('category')
+
+        raw_probs = fm['model'].predict_proba(X_scored)[:, 1]
+        preds += fm['iso_reg'].transform(raw_probs) / len(bundle['fold_models'])
+
+    return preds
+
+
 def plot_reliability_diagram(y_true, y_probs, n_bins=10, title="Reliability Diagram"):
     """Plots and saves an academic-grade Reliability Diagram (Calibration Curve)."""
     from sklearn.calibration import calibration_curve
@@ -174,23 +187,15 @@ X = pd.read_csv('X_preprocessed.csv').reset_index(drop=True)
 y = pd.read_csv('y_preprocessed.csv').iloc[:, 0].reset_index(drop=True)
 test_features = pd.read_csv('test_preprocessed.csv').reset_index(drop=True)
 categorical_cols = joblib.load('categorical_cols.pkl')
- 
-# Training-derived rare class mapping 
-rare_map_path = 'rare_class_map.pkl'
-if os.path.exists(rare_map_path):
-    try:
-        rare_class_map = joblib.load(rare_map_path)
-        print(f"Loaded rare_class_map with {len(rare_class_map)} columns")
-        for col, rare_vals in rare_class_map.items():
-            if col in X.columns:
-                X[col] = X[col].replace(rare_vals, -1)
-            if col in test_features.columns:
-                test_features[col] = test_features[col].replace(rare_vals, -1)
-        print("Applied training-derived rare class mapping to train and test sets")
-    except Exception as e:
-        print(f"Warning: could not load/apply rare_class_map: {e}")
-else:
-    print("No rare_class_map found — ensure preprocessing saved it")
+cols_for_rare = joblib.load('cols_for_rare.pkl')
+
+# NOTE The mapping is fit fresh, per fold, on only that fold's training partition inside
+# the CV loop below (see preprocessing_utils.py), and separately on the
+# full training set for the final production model (legitimate there, since
+# that model is never evaluated on held-out data). X and test_features are
+# therefore intentionally left un-mapped here.
+print(f"Loaded {len(cols_for_rare)} candidate columns for rare-category mapping "
+      f"(thresholding deferred to each CV fold)")
  
 print(f"X shape: {X.shape}, y shape: {y.shape}")
 print(f"Test features shape: {test_features.shape}\n")
@@ -252,6 +257,17 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X, y), 1):
     y_train_f = y.iloc[train_idx]
     y_val_f = y.iloc[val_idx]
     X_test_copy = test_features.copy()
+
+    # FOLD-SAFE rare-category mapping: fit only on this fold's outer
+    # training rows (X_train_f), then apply to this fold's validation rows
+    # AND the test set, so the test-set scoring stays consistent with what
+    # this fold's model was actually trained on. The 80/20 fit/calibration
+    # split below happens entirely within the already-mapped X_train_f, so
+    # it doesn't need (or get) its own separate rare map.
+    fold_rare_map = fit_rare_map(X_train_f, cols_for_rare, threshold=0.01)
+    X_train_f = apply_rare_map(X_train_f, fold_rare_map)
+    X_val_f = apply_rare_map(X_val_f, fold_rare_map)
+    X_test_copy = apply_rare_map(X_test_copy, fold_rare_map)
  
     # Fold-safe 80/20 split to avoid calibration leakage
     X_fit, X_cal, y_fit, y_cal = train_test_split(
@@ -268,7 +284,7 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X, y), 1):
  
     # MODEL TRAINING
     # Uses the ORIGINAL n_estimators (upper bound from Optuna's search space)
-    # together with early stopping, exactly as during tuning — this lets each
+    # together with early stopping, exactly as during tuning, this lets each
     # fold find its own optimal tree count, consistent with how Optuna scored it.
     print("  Training LightGBM...")
     model = lgb.LGBMClassifier(**lgb_params)
@@ -289,10 +305,7 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X, y), 1):
  
     raw_ranking = evaluate_ranking(y_val_f, val_probs_raw)
     fold_pr_aucs_raw_optimized.append(raw_ranking['PR-AUC'])
- 
-    # Catch recall key safely
-    r_key = [k for k in raw_ranking.keys() if 'Recall@1' in k][0]
-    fold_recalls_raw_optimized.append(raw_ranking[r_key])
+    fold_recalls_raw_optimized.append(raw_ranking['Recall@1%'])
  
     cal_probs = model.predict_proba(X_cal)[:, 1]
  
@@ -307,7 +320,7 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X, y), 1):
     # Store results
     oof_preds_calibrated[val_idx] = calibrated_fold_probs
     test_preds_calibrated += calibrated_test_probs / skf.n_splits
-    fold_models.append({'model': model, 'iso_reg': iso_reg, 'fold': fold})
+    fold_models.append({'model': model, 'iso_reg': iso_reg, 'rare_map': fold_rare_map, 'fold': fold})
  
     # METRICS
     fold_gini = 2 * roc_auc_score(y_val_f, calibrated_fold_probs) - 1
@@ -336,10 +349,8 @@ final_gini = 2 * roc_auc_score(y, oof_preds_calibrated) - 1
 final_brier = np.mean(brier_scores)
 final_ece = np.mean(ece_scores)
 final_pr_auc = np.mean([m['PR-AUC'] for m in ranking_metrics_list])
- 
-# Dynamic key selector to avoid Recall string alignment KeyError issues
-first_metrics_dict = ranking_metrics_list[0]
-recall_key = [k for k in first_metrics_dict.keys() if 'Recall@1' in k][0]
+
+recall_key = 'Recall@1%'
 final_recall = np.mean([m[recall_key] for m in ranking_metrics_list])
  
 print("\n" + "=" * 70)
@@ -360,40 +371,12 @@ print("\n" + "=" * 70)
 print("PHASE 3.2: Bootstrap Analysis (1000 iterations)")
 print("=" * 70)
  
-def calculate_bootstrap_ci(y_true, y_probs, n_bootstraps=1000):
-    bootstrap_gini = []
-    bootstrap_brier = []
-    bootstrap_ece = []
- 
-    print(f"Running {n_bootstraps} bootstrap iterations...")
- 
-    for i in tqdm(range(n_bootstraps)):
-        indices = resample(np.arange(len(y_true)), replace=True, random_state=i)
- 
-        y_true_sample = y_true.iloc[indices].values if hasattr(y_true, 'iloc') else y_true[indices]
-        y_probs_sample = y_probs[indices]
- 
-        sample_auc = roc_auc_score(y_true_sample, y_probs_sample)
-        bootstrap_gini.append(2 * sample_auc - 1)
-        bootstrap_brier.append(brier_score_loss(y_true_sample, y_probs_sample))
-        bootstrap_ece.append(calculate_ece(y_true_sample, y_probs_sample))
- 
-    metrics = {
-        'Gini Index': bootstrap_gini,
-        'Brier Score': bootstrap_brier,
-        'ECE': bootstrap_ece
-    }
- 
-    ci_results = {}
-    for name, values in metrics.items():
-        lower = np.percentile(values, 2.5)
-        upper = np.percentile(values, 97.5)
-        mean = np.mean(values)
-        ci_results[name] = (lower, mean, upper)
- 
-    return ci_results
- 
-ci_results = calculate_bootstrap_ci(y, oof_preds_calibrated, n_bootstraps=1000)
+# calculate_bootstrap_ci() is now imported from metrics.py (same canonical
+# module used for calculate_ece / evaluate_ranking). Its behavior is
+# unchanged from the local version this replaces: 1000 bootstrap resamples,
+# reporting (lower, mean, upper) 95% CI for Gini, Brier, and ECE together.
+print(f"Running 1000 bootstrap iterations...")
+ci_results = calculate_bootstrap_ci(y, oof_preds_calibrated, n_bootstraps=1000, show_progress=True)
  
 print("\n" + "=" * 70)
 print("95% CONFIDENCE INTERVALS (Bootstrap)")
@@ -414,6 +397,44 @@ if not os.path.exists(output_dir):
 np.save(f'{output_dir}/oof_preds_calibrated.npy', oof_preds_calibrated)
 np.save(f'{output_dir}/test_preds_calibrated.npy', test_preds_calibrated)
 joblib.dump(fold_models, f'{output_dir}/fold_models.pkl')
+
+# ============================================================================
+# SAVE THE REAL, CALIBRATED PREDICTOR
+# ============================================================================
+# `fold_models.pkl` holds everything needed to reproduce the exact
+# probabilities used for OOF validation and the Kaggle submission: each
+# fold's LightGBM model, that fold's isotonic calibrator, and that fold's
+# own rare-category map. `model_results/final_model.pkl` (saved further
+# below) is a different, uncalibrated model kept only for SHAP — its
+# `.predict_proba()` does NOT give the same calibrated probability.
+#
+# To make the actual scoring predictor an explicit, self-describing
+# artifact, this bundles the fold ensemble together with everything
+# needed to preprocess raw input the same way (feature order, which
+# columns are categorical). Each fold's own rare-category map travels
+# WITH that fold inside `fold_models`, rather than as one shared,
+# bundle-wide mapping. Score new data with
+# `predict_calibrated_ensemble(bundle, X_new)` (defined above).
+model_bundle = {
+    "kind": "calibrated_fold_ensemble",
+    "fold_models": fold_models,
+    "feature_names": list(X.columns),
+    "categorical_features": current_cat_features,
+}
+joblib.dump(model_bundle, f'{output_dir}/calibrated_predictor.pkl')
+print(f"✓ Saved calibrated_predictor.pkl — the actual predictor behind "
+      f"OOF validation and submission_final.csv")
+
+# Sanity check: scoring the raw test set through the bundle should reproduce
+# test_preds_calibrated.npy exactly (both are the same fold-averaged,
+# isotonic-calibrated computation, each using that fold's own rare map),
+# which confirms the bundle is faithful.
+_bundle_test_preds = predict_calibrated_ensemble(model_bundle, test_features)
+_max_diff = np.max(np.abs(_bundle_test_preds - test_preds_calibrated))
+print(f"  Sanity check — max |bundle prediction - test_preds_calibrated.npy|: {_max_diff:.2e}")
+if _max_diff > 1e-8:
+    print("  Warning: bundle predictions do not exactly match test_preds_calibrated.npy — investigate.")
+
  
 metrics_summary = {
     'final_gini': final_gini,
@@ -534,7 +555,10 @@ else:
           f"falling back to the Optuna upper bound n_estimators={final_params.get('n_estimators')}.")
  
 final_model = lgb.LGBMClassifier(**final_params)
- 
+
+final_rare_map = fit_rare_map(X, cols_for_rare, threshold=0.01)
+X = apply_rare_map(X, final_rare_map)
+
 for col in current_cat_features:
     X[col] = X[col].astype("category")
  
@@ -546,6 +570,17 @@ final_model.fit(
 # ============================================================================
 # SAVE FINAL MODEL
 # ============================================================================
+# IMPORTANT: this is a single LightGBM model trained on ALL data, with NO
+# isotonic calibration layer. Its .predict_proba() output is NOT the same
+# probability used for OOF validation or submission_final.csv — those come
+# from the 5-fold calibrated ensemble saved just above as
+# `calibrated_predictor.pkl`. This raw model is kept specifically because
+# 03b_SHAP_Interpretability.py needs a plain tree model for TreeSHAP (SHAP's
+# TreeExplainer does not work through an isotonic regression step).
+#
+# Rule of thumb: use `calibrated_predictor.pkl` for scoring, validation
+# reproduction, audits, or a demo. Use `final_model.pkl` only for SHAP /
+# feature-importance style interpretability work.
 print("\nSAVING FINAL MODEL")
 print("Best iteration:", final_model.best_iteration_)
  

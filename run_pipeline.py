@@ -11,7 +11,7 @@ stage's own logging/print output streams to the console in real time.
 Usage:
     python run_pipeline.py
     python run_pipeline.py --skip-preprocessing        # resume from stage 2
-    python run_pipeline.py --only 03a_ModelTRaining_Bootstrap.py
+    python run_pipeline.py --only 03a_ModelTraining_Bootstrap.py
     python run_pipeline.py --dry-run                   # print plan, don't execute
 """
 
@@ -24,14 +24,30 @@ from pathlib import Path
 
 # Pipeline stages in the exact order defined in the README.
 # (name, script_filename, description)
+#
+# NOTE: filenames here must match the actual filenames on disk EXACTLY,
+# including case. Windows filesystems are case-insensitive, so a mismatch
+# like "02b_HyperParameterTuning.py" vs. the real "02b_HyperparameterTuning.py"
+# silently works there — but fails immediately on Linux/Mac (or any
+# case-sensitive filesystem) with a "file not found" error before anything
+# even runs. Keep these in sync with the actual script filenames.
 PIPELINE_STAGES = [
     ("Preprocessing",              "01_Preprocessing.py",               "Data cleaning, encoding, artifact generation"),
     ("Baseline Models",            "02a_BaselineModels.py",             "Baseline models: Random Forest, LGBM, XGBoost"),
-    ("Hyperparameter Tuning",      "02b_HyperParameterTuning.py",       "Optuna/grid-search hyperparameter sweep"),
-    ("Training + Calibration",     "03a_ModelTRaining_Bootstrap.py",    "Final model, isotonic calibration, bootstrap CIs"),
-    ("SHAP Interpretability",      "03b_Shap_Interpretability.py",      "TreeSHAP global/local explainability"),
+    ("Hyperparameter Tuning",      "02b_HyperparameterTuning.py",       "Optuna/grid-search hyperparameter sweep"),
+    ("Training + Calibration",     "03a_ModelTraining_Bootstrap.py",    "Final model, isotonic calibration, bootstrap CIs"),
+    ("SHAP Interpretability",      "03b_SHAP_Interpretability.py",      "TreeSHAP global/local explainability"),
     ("Business Impact Simulation", "03c_Business_Impact_Simulation.py", "Threshold/cost-benefit simulation"),
 ]
+
+# Shared, importable utility modules that pipeline stages depend on. These
+# are never run as their own stage — 00, 02a, 02b, and 03a `import` them
+# directly (see their own docstrings for exactly who imports what). If one
+# is missing, a stage script will still be found by the check in
+# run_stage() and will start, then fail deep inside a subprocess with a
+# ModuleNotFoundError that's easy to miss in a long log. Checking for them
+# up front in main() gives a clear, immediate error instead.
+REQUIRED_SHARED_MODULES = ["metrics.py", "preprocessing_utils.py"]
 
 LOG_FILE = Path("pipeline_run.log")
 
@@ -75,7 +91,7 @@ def run_stage(name: str, script: str, description: str, dry_run: bool = False) -
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the car insurance claim prediction pipeline end-to-end.")
     parser.add_argument("--only", type=str, default=None,
-                         help="Run a single stage by its script filename, e.g. --only 02b_HyperParameterTuning.py")
+                         help="Run a single stage by its script filename, e.g. --only 02b_HyperparameterTuning.py")
     parser.add_argument("--skip-preprocessing", action="store_true",
                          help="Skip stage 1 (01_Preprocessing.py), useful when preprocessed artifacts already exist.")
     parser.add_argument("--from-stage", type=str, default=None,
@@ -108,6 +124,22 @@ def main() -> None:
     log("=" * 70)
     log(f"PIPELINE RUN START — {len(stages)} stage(s) scheduled")
     log("=" * 70)
+
+    # Pre-flight check: shared modules that stage scripts `import` (not run
+    # directly) must already be sitting next to this script, or the failure
+    # otherwise only surfaces later, mid-run, as an opaque ModuleNotFoundError
+    # inside a subprocess.
+    missing_modules = [m for m in REQUIRED_SHARED_MODULES if not Path(m).exists()]
+    if missing_modules:
+        if args.dry_run:
+            log(f"WARNING: required shared module(s) not found in current directory: "
+                f"{', '.join(missing_modules)} (continuing since --dry-run; a real run would abort here)")
+        else:
+            log(f"ERROR: required shared module(s) not found in current directory: "
+                f"{', '.join(missing_modules)}")
+            log("These are imported by pipeline scripts (00/02a/02b/03a) and must sit "
+                "in the same directory as this script. Aborting before running anything.")
+            sys.exit(1)
 
     total_start = time.time()
     for name, script, description in stages:

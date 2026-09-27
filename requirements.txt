@@ -1,0 +1,20 @@
+# Pinned dependencies for the Porto Seguro Car Insurance Claim Prediction pipeline.
+# Python version 3.12.10
+# Install with: 
+#   pip install -r requirements.txt
+#
+# If you deliberately upgrade a package, re-run the pipeline and confirm
+# the reported metrics in README.md still hold before trusting them.
+
+pandas==2.3.3
+numpy==1.26.4
+scikit-learn==1.5.2
+lightgbm==4.5.0
+xgboost==2.1.1
+optuna==3.6.1
+shap==0.46.0
+matplotlib==3.9.2
+seaborn==0.13.2
+joblib==1.4.2
+tqdm==4.66.5
+scipy==1.13.1

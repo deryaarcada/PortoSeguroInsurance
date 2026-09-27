@@ -26,6 +26,8 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_auc_score
 import lightgbm as lgb
 
+from preprocessing_utils import fit_rare_map, apply_rare_map
+
 try:
     import optuna
 except ImportError:
@@ -44,24 +46,19 @@ def load_data():
     X = pd.read_csv('X_preprocessed.csv')
     y = pd.read_csv('y_preprocessed.csv').iloc[:, 0]
     categorical_cols = joblib.load('categorical_cols.pkl')
-
-    rare_map_path = 'rare_class_map.pkl'
-    if os.path.exists(rare_map_path):
-        rare_class_map = joblib.load(rare_map_path)
-        for col, rare_vals in rare_class_map.items():
-            if col in X.columns:
-                X[col] = X[col].replace(rare_vals, -1)
+    cols_for_rare = joblib.load('cols_for_rare.pkl')
 
     # index issue solution
     X = X.reset_index(drop=True)
     y = y.reset_index(drop=True)
 
-    # Convert all categorical variables to 'category' type
     cat_feats = [c for c in categorical_cols if c in X.columns]
-    for col in cat_feats:
-        X[col] = X[col].astype('category')
 
-    return X, y, cat_feats
+# NOTE: rare-category mapping and category dtype casting are NOT done
+# here — they happen fold-by-fold inside objective()'s CV loop, so each
+# fold's rare-value thresholds come only from that fold's own training
+# rows (see preprocessing_utils.py). X is returned unmapped, original dtypes.
+    return X, y, cat_feats, cols_for_rare
 
 
 # Track best_iteration_ values per trial so we can recover the
@@ -69,7 +66,7 @@ def load_data():
 TRIAL_BEST_ITERATIONS = {}
 
 
-def objective(trial, X, y, categorical_features):
+def objective(trial, X, y, categorical_features, cols_for_rare):
     # Hyperparameter ranges that Optuna will test
     params = {
         'n_estimators': trial.suggest_int('n_estimators', 400, 1200, step=100),
@@ -93,8 +90,18 @@ def objective(trial, X, y, categorical_features):
     fold_best_iterations = []
 
     for train_idx, val_idx in skf.split(X, y):
-        X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
+        X_train, X_val = X.iloc[train_idx].copy(), X.iloc[val_idx].copy()
         y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+
+        # FOLD-SAFE rare-category mapping: fit only on this fold's training
+        # rows, then apply to both this fold's train and validation rows.
+        fold_rare_map = fit_rare_map(X_train, cols_for_rare, threshold=0.01)
+        X_train = apply_rare_map(X_train, fold_rare_map)
+        X_val = apply_rare_map(X_val, fold_rare_map)
+
+        for col in categorical_features:
+            X_train[col] = X_train[col].astype('category')
+            X_val[col] = X_val[col].astype('category')
 
         model = lgb.LGBMClassifier(**params)
         model.fit(
@@ -125,7 +132,7 @@ def objective(trial, X, y, categorical_features):
 
 
 def main():
-    X, y, cat_feats = load_data()
+    X, y, cat_feats, cols_for_rare = load_data()
 
     print(f"\nData shapes successfully realigned -> X: {X.shape}, y: {y.shape}")
     print("\nStarting Bayesian Optimization via Optuna (30 Trials)...")
@@ -144,7 +151,7 @@ def main():
 
     # The `catch=(Exception,)` parameter prevents the entire process from crashing in case of any error.
     study.optimize(
-        lambda trial: objective(trial, X, y, cat_feats),
+        lambda trial: objective(trial, X, y, cat_feats, cols_for_rare),
         n_trials=30,
         callbacks=[logging_callback],
         catch=(Exception,)
