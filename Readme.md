@@ -4,19 +4,19 @@ An advanced, production-grade machine learning pipeline designed to predict auto
 
 ## Key Achievements & Validation Benchmarks
 
-* **Independent External Validation (Kaggle):** Achieved a **Public Gini Score of 0.27926** and a **Private Gini Score of 0.28518**. The higher private leaderboard score suggests good generalization performance and limited evidence of overfitting.
-* **Leakage-Free Reliability:** The internal 5-Fold Stratified Cross-Validation Gini (0.27763, Bootstrap Mean, 95% CI: [0.27004, 0.28468]) sits close to the external Kaggle public benchmark, validating the integrity of the evaluation pipeline. Every learned preprocessing step — including rare-category collapsing — is fit strictly inside each CV fold's training partition (see `preprocessing_utils.py`), so no validation-fold row influences its own fold's preprocessing.
-* **Actuarial-Grade Calibration:** Post-calibration Expected Calibration Error (ECE) was minimized using Isotonic Regression, ensuring predicted probabilities mirror empirical risk frequencies. Bootstrap-estimated ECE: 0.00087 (95% CI: [0.00051, 0.00123]); fold-averaged ECE: 0.00176. Brier Score: 0.03476.
+* **Independent External Validation (Kaggle):** Achieved a **Public Gini Score of 0.27772** and a **Private Gini Score of 0.28431** (submitted after the competition deadline, and scored against the same public/private test partitions). The higher private leaderboard score suggests good generalization performance and limited evidence of overfitting.
+* **Leakage-Free Reliability:** The internal 5-Fold Stratified Cross-Validation Gini (0.27669, Bootstrap Mean, 95% CI: [0.26927, 0.28374]) sits close to the external Kaggle public benchmark, validating the integrity of the evaluation pipeline. Every learned preprocessing step — including rare-category collapsing — is fit strictly inside each CV fold's training partition (see `preprocessing_utils.py`), so no validation-fold row influences its own fold's preprocessing.
+* **Actuarial-Grade Calibration:** Post-calibration Expected Calibration Error (ECE) was minimized using Isotonic Regression, ensuring predicted probabilities mirror empirical risk frequencies. Bootstrap-estimated ECE: 0.00081 (95% CI: [0.00048, 0.00117]); fold-averaged ECE: 0.00174. Brier Score: 0.03476.
 * *__Evidence-Based Feature Reduction:__ The exclusion of the 20 `ps_calc_*` features is supported by a dedicated EDA study (see Phase 0 below), not just heuristic judgment — chi-square tests showed no significant association with the target (all p > 0.05), Cramér's V averaged 0.0004, and a controlled ablation experiment found no statistically detectable Gini difference with vs. without these features (ΔGini = +0.0005, fully overlapping 95% CIs).*
 
 | Metric | Value |
 | :--- | :--- |
-| Kaggle Public Gini | 0.27926 |
-| Kaggle Private Gini | 0.28518 |
-| Internal CV Gini (Bootstrap Mean) | 0.27763 (95% CI: 0.27004–0.28468) |
-| PR-AUC | 0.06633 |
+| Kaggle Public Gini | 0.27772 |
+| Kaggle Private Gini | 0.28431 |
+| Internal CV Gini (Bootstrap Mean) | 0.27669 (95% CI: 0.26927–0.28374) |
+| PR-AUC | 0.06679 |
 | Brier Score | 0.03476 |
-| Expected Calibration Error (ECE) | 0.00087 (bootstrap) / 0.00176 (fold-averaged) |
+| Expected Calibration Error (ECE) | 0.00081 (bootstrap) / 0.00174 (fold-averaged) |
 
 *Note: All internal metrics above are computed on out-of-fold (OOF) predictions from the final, leakage-free 5-fold pipeline described below.*
 
@@ -47,7 +47,7 @@ The pipeline is modularized into dedicated Python scripts, enforcing clean separ
 * **`01_Preprocessing.py`**
   * Handles missing value imputation strategies customized for high-cardinality categorical data and continuous risk indices.
   * Drops the 20 noisy `ps_calc` columns *(justified empirically in Phase 0 above)* and casts categorical variables to Pandas `category` dtype.
-  * Casts the candidate rare-category columns to a list (`cols_for_rare.pkl`) but does **not** threshold them here — see the "Fold-Safe Preprocessing" note below.
+  * Identifies the candidate rare-category columns and saves them as a list (`cols_for_rare.pkl`) but does **not** threshold them here — see the "Fold-Safe Preprocessing" note above.
   * Outputs `X_preprocessed.csv`, `y_preprocessed.csv`, `test_preprocessed.csv`, `metadata.pkl`, `categorical_cols.pkl`, `cols_for_rare.pkl`, and copies convenience duplicates to the root directory for later phases.
 
 ### 2. Baseline Construction & Optimization
@@ -55,12 +55,12 @@ The pipeline is modularized into dedicated Python scripts, enforcing clean separ
   * Benchmarks LightGBM, Random Forest, and XGBoost out-of-the-box, using ALL preprocessed features (no upfront feature-selection step), via 5-Fold Stratified Cross-Validation.
   * This "all-features" design deliberately avoids a feature-selection-leakage pitfall that would occur if a Top-N feature list were derived from the full dataset and then reused across CV folds.
   * Reports Gini, PR-AUC, and Recall@1% per fold plus a Bootstrap 95% CI per model.
-  * Current baseline result: LightGBM Gini 0.27946 [0.2714–0.2866], Random Forest 0.24895 [0.2413–0.2556], XGBoost 0.27550 [0.2682–0.2833].
+  * Current baseline result: LightGBM Gini 0.27946 [0.2714–0.2866], Random Forest 0.24895 [0.2413–0.2556], XGBoost 0.27443 [0.2668–0.2819].
   * Saves `model_results/baseline_metrics_backup.pkl` for later use in the ablation study.
   * (A separate, optional descriptive-only feature-importance script exists for exploratory reporting but is not part of the active `run_pipeline.py` sequence, since its output is not used to filter or select features downstream.)
 * **`02b_HyperparameterTuning.py`**
   * Executes a 30-trial Bayesian hyperparameter search via Optuna (TPE sampler), optimizing `num_leaves`, `max_depth`, `min_child_samples`, `subsample`, `colsample_bytree`, `reg_alpha`, `reg_lambda`, and `learning_rate`, using 5-Fold Stratified CV with early stopping.
-  * Current best result: CV Gini 0.28329, with an average early-stopped tree count of 364 (search upper bound: n_estimators=1200).
+  * Current best result: CV Gini 0.28245, with an average early-stopped tree count of 518 (search upper bound: n_estimators=1200).
   * Also records `n_estimators_effective` — the average early-stopped tree count for the best trial — so Phase 3a can train the final production model with a tree count consistent with the reported tuning Gini, instead of the (larger) search-space upper bound.
   * **Outputs Written To:** `model_results/best_lgbm_params.pkl`
 
@@ -74,11 +74,11 @@ The pipeline is modularized into dedicated Python scripts, enforcing clean separ
     | Experiment Step | Gini Index | Δ vs. Baseline |
     | :--- | :--- | :--- |
     | 1. LightGBM Baseline (Default Params) | 0.27946 | +0.00000 |
-    | 2. LightGBM Optimized (Optuna Tuning, fold-safe calib. split) | 0.27904 | -0.00042 |
-    | 3. LightGBM Final (Tuned + Calibration) | 0.27740 | -0.00206 |
+    | 2. LightGBM Optimized (Optuna Tuning, fold-safe calib. split) | 0.27854 | -0.00092 |
+    | 3. LightGBM Final (Tuned + Calibration) | 0.27647 | -0.00299 |
 
-    Note: Optuna's own tuning-time CV Gini (0.28329) is measured without the calibration carve-out. The small apparent dip in step 2 above reflects the reduced training data (~64% vs. ~80% of each outer-training fold) introduced by reserving a calibration subset, not a failure of tuning itself — the trade-off is made deliberately to keep calibration leakage-free.
-  * Trains the **final production model** on the complete training dataset using `n_estimators=364` (Optuna's early-stopped average) and saves it for downstream explainability analysis and deployment.
+    Note: Optuna's own tuning-time CV Gini (0.28245) is measured without the calibration carve-out. The small apparent dip in step 2 above reflects the reduced training data (~64% vs. ~80% of each outer-training fold) introduced by reserving a calibration subset, not a failure of tuning itself — the trade-off is made deliberately to keep calibration leakage-free.
+  * Trains the **final production model** on the complete training dataset using `n_estimators=518` (Optuna's early-stopped average) and saves it for downstream explainability analysis and deployment.
   * Generates the Kaggle submission file and the reliability (calibration) diagram.
   * Saves **`model_results/calibrated_predictor.pkl`** — a self-contained bundle (`{fold_models, feature_names, categorical_features}`, where each entry in `fold_models` carries its own `{model, iso_reg, rare_map}`) that is the actual predictor behind `oof_preds_calibrated.npy` and `submission_final.csv`: score new data by averaging each fold model's `predict_proba()` through that fold's own isotonic calibrator, after applying that fold's own rare-category map (see `predict_calibrated_ensemble()` in the script). This exists because `final_model.pkl` (below) is a *single, uncalibrated* LightGBM model kept only so `03b_SHAP_Interpretability.py` has a plain tree model for TreeSHAP — its `.predict_proba()` does **not** reproduce the calibrated numbers reported elsewhere in this README. **Use `calibrated_predictor.pkl` for scoring, validation reproduction, or audits; use `final_model.pkl` only for SHAP/interpretability.**
   * **Outputs Written To:** `model_results/final_model.pkl`, `model_results/calibrated_predictor.pkl`, `model_results/fold_models.pkl`, `model_results/oof_preds_calibrated.npy`, `model_results/test_preds_calibrated.npy`, `model_results/metrics_summary.pkl`, `model_results/fold_results.csv`, `model_results/ablation_study.csv`, `model_results/submission_final.csv`, `model_results/lgbm_reliability_diagram.png`
@@ -90,6 +90,7 @@ The pipeline is modularized into dedicated Python scripts, enforcing clean separ
   * **Outputs Written To:** `model_results/shap_analysis/` (summary plots, dependence plots, force/waterfall plots, `shap_feature_importance.csv`, raw SHAP values)
 * **`03c_Business_Impact_Simulation.py`**
   * Translates statistical metrics into financial terms. Simulates expected savings across a sensitivity grid of intervention costs, claim severities, and targeting thresholds (top 0.5%, 1%, 2%).
+  * **This is a sensitivity simulation under explicit assumptions, not a validated business forecast.** Two illustrative-placeholder knobs — `effectiveness` (default 0.25: only a fraction of claims are actually preventable once acted on) and `uptake_rate` (default 0.70: not every contacted customer accepts the offered action) — discount the naive "every intervention works, everyone cooperates" savings figure before it is reported. Both must be recalibrated against a real pilot program or actuarial data before the dollar figures are used for an actual budget decision. For comparison, the output also reports the undiscounted "naive" scenario (`total_expected_saving_naive`, `ROI_naive`) side by side with the realistic one, so the size of the gap between "clean scenario calculator" and "credible estimate" stays visible rather than hidden.
   * Performs cost-benefit analysis to help actuarial teams identify profitable intervention thresholds under different risk-tolerance assumptions.
   * **Outputs Written To:** `model_results/business_impact_sensitivity.csv`, `model_results/business_impact_heatmaps/`
 
@@ -97,9 +98,9 @@ The pipeline is modularized into dedicated Python scripts, enforcing clean separ
 
 ## Technical Insight: Reliability & Calibration
 
-The pipeline achieves a well-calibrated final model, with bootstrap-estimated ECE of 0.00087 (95% CI: [0.00051, 0.00123]) using Isotonic Regression on a fold-safe calibration split. As is typical with isotonic calibration, this comes with a small, expected reduction in raw discrimination (Gini) relative to the uncalibrated model, since isotonic regression's step-function output introduces prediction ties that slightly reduce ranking-based metrics like AUC/Gini while substantially improving probability accuracy.
+The pipeline achieves a well-calibrated final model, with bootstrap-estimated ECE of 0.00081 (95% CI: [0.00048, 0.00117]) using Isotonic Regression on a fold-safe calibration split. As is typical with isotonic calibration, this comes with a small, expected reduction in raw discrimination (Gini) relative to the uncalibrated model, since isotonic regression's step-function output introduces prediction ties that slightly reduce ranking-based metrics like AUC/Gini while substantially improving probability accuracy.
 
-*Note: the ECE figures above reflect two corrections made to the pipeline. First, a fix to `calculate_ece()`: the metric previously mixed quantile-based bins (for the accuracy/confidence values) with equal-width bin weights, which understated ECE by roughly 2.5–4x; the corrected implementation bins consistently by quantile throughout and now lives in a single shared module, `metrics.py`, imported by every script that needs it (see directory structure below). Second, the fold-safe rare-category mapping fix described below, which slightly changes every downstream number (Gini, ECE, hyperparameters) since each fold's training data is no longer identical to what it was before. The model's calibration quality itself remains excellent — an ECE around 0.0009–0.0018 is well below typical "well-calibrated" thresholds of ~0.05.*
+*Note: the ECE figures above reflect two corrections made to the pipeline. First, a fix to `calculate_ece()`: the metric previously mixed quantile-based bins (for the accuracy/confidence values) with equal-width bin weights, which understated ECE by roughly 2.5–4x; the corrected implementation bins consistently by quantile throughout and now lives in a single shared module, `metrics.py`, imported by every script that needs it (see directory structure below). Second, the fold-safe rare-category mapping fix described above, which slightly changes every downstream number (Gini, ECE, hyperparameters) since each fold's training data is no longer identical to what it was before. The model's calibration quality itself remains excellent — an ECE around 0.0008–0.0017 is well below typical "well-calibrated" thresholds of ~0.05.*
 
 ---
 
@@ -196,7 +197,7 @@ python 03c_Business_Impact_Simulation.py
 ```
 
 ### 4. Testing (optional, but recommended after any code change)
-A small `pytest` suite in `tests/` covers a handful of fast, high-value sanity checks — it is not a substitute for re-running the full pipeline, but it catches obvious regressions in seconds instead of the ~50 minutes a full run takes:
+A small `pytest` suite in `tests/` covers a handful of fast, high-value sanity checks — it is not a substitute for re-running the full pipeline, but it catches obvious regressions in seconds instead of the ~40–50 minutes a full run takes:
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 pytest
