@@ -493,21 +493,21 @@ optuna_recall = np.mean(fold_recalls_raw_optimized)
 # --- DYNAMIC STEP 3: Generated live from calibrated current script run execution data ---
 ablation_data = [
     {
-        'Experiment Step': '1. LightGBM Baseline (Default Params)',
+        'Experiment Step': '1. LightGBM, untuned reference configuration',
         'Gini Index': base_gini,
         'PR-AUC': base_pr,
         'Recall@1%': base_recall,
         'Improvement (Δ)': 0.00000
     },
     {
-        'Experiment Step': '2. LightGBM Optimized (Optuna Tuning)',
+        'Experiment Step': '2. LightGBM, tuned, before calibration',
         'Gini Index': optuna_gini,
         'PR-AUC': optuna_pr,
         'Recall@1%': optuna_recall,
         'Improvement (Δ)': optuna_gini - base_gini
     },
     {
-        'Experiment Step': '3. LightGBM Final (Tuned + Calibration)',
+        'Experiment Step': '3. LightGBM, tuned and calibrated',
         'Gini Index': final_gini,
         'PR-AUC': final_pr_auc,
         'Recall@1%': final_recall,

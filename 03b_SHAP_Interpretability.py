@@ -23,6 +23,8 @@ import warnings
 import shap
 import os
 
+from preprocessing_utils import fit_rare_map, apply_rare_map
+
 warnings.filterwarnings('ignore')
 
 
@@ -86,10 +88,17 @@ print("\nApplying the same feature representation used in Phase 03a...")
 
 
 
-try:
-    categorical_cols = joblib.load('categorical_cols.pkl')
-except Exception:
-    categorical_cols = []
+# FIX: these must load; falling back to [] silently would treat categorical
+# columns as plain numbers again.
+categorical_cols = joblib.load('categorical_cols.pkl')
+cols_for_rare = joblib.load('cols_for_rare.pkl')
+
+# FIX: final_model.pkl was trained in 03a AFTER the rare-category map was
+# fit on the full training set and applied (03a: fit_rare_map / apply_rare_map).
+# X_preprocessed.csv is un-mapped, so the same map must be applied here.
+final_rare_map = fit_rare_map(X, cols_for_rare, threshold=0.01)
+X = apply_rare_map(X, final_rare_map)
+print(f"Applied rare-category map to {len(final_rare_map)} columns.")
 
 current_cat_features = [
     c for c in categorical_cols
@@ -173,11 +182,15 @@ print(
 
 
 # ============================================================================
-# CONVERT SAMPLE TO NUMPY
+# DISPLAY COPY (PLOTTING ONLY)
 # ============================================================================
 
-print("\nConverting SHAP input to NumPy...")
+print("\nPreparing display copy of the sample (used for plots only)...")
 
+# FIX: this NumPy array holds raw category values (-1, 0, 1, ...) and is used
+# ONLY for plot colouring/labels and for saving. It must NOT be given to the
+# model or explainer: LightGBM would read raw values as internal category codes.
+# SHAP is computed from the DataFrame X_sample (category dtype) below.
 X_sample_np = X_sample.to_numpy(dtype=np.float64)
 
 print(
@@ -211,9 +224,9 @@ explainer = shap.TreeExplainer(
     final_model.booster_
 )
 
-# Pass NumPy array to avoid pandas dtype handling issues.
+# FIX: pass the DataFrame (category dtype), NOT a NumPy array.
 shap_values = explainer.shap_values(
-    X_sample_np
+    X_sample
 )
 
 
@@ -232,6 +245,15 @@ else:
     shap_values_pos = shap_values
 
 print("✓ SHAP values calculated.\n")
+
+# FIX: additivity check - base value + sum(SHAP) must equal the model's raw score.
+_ev = explainer.expected_value
+_ev = float(_ev[1 if np.ndim(_ev) > 0 and len(_ev) > 1 else 0]) if np.ndim(_ev) > 0 else float(_ev)
+_raw = final_model.booster_.predict(X_sample, raw_score=True)
+_err = np.abs(_ev + shap_values_pos.sum(axis=1) - _raw).max()
+print(f"Additivity check: max |base + sum(SHAP) - raw_score| = {_err:.3e}")
+assert _err < 1e-6, "SHAP values do not add up to the model output - do not use."
+print("✓ SHAP values reproduce the model's raw scores.\n")
 
 
 # ============================================================================
@@ -358,6 +380,47 @@ print(
     "[OK] Saved: "
     "shap_feature_importance.csv"
 )
+
+
+# ============================================================================
+# 3b. GAIN vs. SHAP IMPORTANCE (SAME FINAL MODEL)
+# ============================================================================
+# Gain is taken from the same final model, so any rank difference comes from
+# the importance measure itself, not from a different model or feature set.
+
+print("\nComparing gain-based and SHAP-based importance (final model)...")
+
+gain_df = pd.DataFrame({
+    'Feature': final_model.booster_.feature_name(),
+    'Gain': final_model.booster_.feature_importance(importance_type='gain')
+})
+gain_df['Gain rank'] = (
+    gain_df['Gain'].rank(ascending=False, method='min').astype(int)
+)
+
+cmp_df = shap_importance_df[['Feature', 'Mean |SHAP|']].copy()
+cmp_df['SHAP rank'] = (
+    cmp_df['Mean |SHAP|'].rank(ascending=False, method='min').astype(int)
+)
+cmp_df = (
+    cmp_df.merge(gain_df, on='Feature')
+    [['Feature', 'Gain', 'Gain rank', 'Mean |SHAP|', 'SHAP rank']]
+    .sort_values('SHAP rank')
+)
+
+print(cmp_df.head(20).to_string(index=False))
+print()
+print(cmp_df[cmp_df['Feature'] == 'ps_car_11_cat'].to_string(index=False))
+print(
+    "\nSpearman correlation (gain rank vs SHAP rank): "
+    f"{cmp_df['Gain rank'].corr(cmp_df['SHAP rank'], method='spearman'):.3f}"
+)
+
+cmp_df.to_csv(
+    f'{output_dir}/gain_vs_shap_comparison.csv',
+    index=False
+)
+print("[OK] Saved: gain_vs_shap_comparison.csv")
 
 
 # ============================================================================

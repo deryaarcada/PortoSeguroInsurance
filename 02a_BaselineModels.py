@@ -121,8 +121,14 @@ def run_cv_for_model(name, model_factory, X, y, categorical_cols, cols_for_rare,
 
             other_cats = [c for c in current_cat_features if c != 'ps_car_11_cat']
             for col in other_cats:
-                X_train[col] = X_train[col].astype('category').cat.codes
-                X_val[col] = X_val[col].astype('category').cat.codes
+                # FIX: derive integer codes from the TRAINING categories only, so the same
+                # category always gets the same code in train and validation. Note: a code of -1 would only
+                # mean 'category not seen in training'; it is NOT the data value -1 used for missing values.
+                train_cats = X_train[col].astype('category').cat.categories
+                if set(X_val[col].unique()) != set(X_train[col].unique()):
+                    print(f'  [note] {col}: category sets differ between train and validation (fold {fold})')
+                X_train[col] = pd.Categorical(X_train[col], categories=train_cats).codes
+                X_val[col] = pd.Categorical(X_val[col], categories=train_cats).codes
 
             model = model_factory()
             model.fit(X_train, y_train)

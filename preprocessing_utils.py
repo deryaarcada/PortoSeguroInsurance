@@ -42,9 +42,9 @@ def fit_rare_map(X_train, cols, threshold=0.01):
     """
     Learn a rare-category mapping from a TRAINING partition only.
 
-    For each column in `cols`, any category whose frequency in `X_train`
-    falls below `threshold` is recorded as "rare". Nothing outside
-    `X_train` is looked at, so this is safe to call once per CV fold on
+    For each column in 'cols', any category whose frequency in 'X_train'
+    falls below 'threshold' is recorded as "rare". Nothing outside
+    'X_train' is looked at, so this is safe to call once per CV fold on
     that fold's training split.
 
     Parameters
@@ -53,7 +53,7 @@ def fit_rare_map(X_train, cols, threshold=0.01):
         The training partition (e.g. a single CV fold's training rows).
     cols : iterable of str
         Candidate categorical/ordinal column names to check. Columns not
-        present in `X_train` are silently skipped.
+        present in 'X_train' are silently skipped.
     threshold : float, default=0.01
         Categories with frequency below this threshold are marked rare.
 
@@ -94,8 +94,8 @@ def apply_rare_map(X_data, rare_map):
     Returns
     -------
     pd.DataFrame
-        A copy of `X_data` with rare values replaced by -1 in every column
-        present in both `X_data` and `rare_map`.
+        A copy of 'X_data' with rare values replaced by -1 in every column
+        present in both 'X_data' and 'rare_map'.
     """
     X_data = X_data.copy()
     for col, rare_values in rare_map.items():

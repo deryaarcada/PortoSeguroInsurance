@@ -5,22 +5,23 @@ This project focuses on predicting automobile insurance claim probabilities in a
 ## Key Achievements & Validation Benchmarks
 
 * **External Validation on Kaggle:** The model achieved a Public Gini Score of 0.27772 and a Private Gini Score of 0.28431 on the Porto Seguro benchmark. Although submitted after the official competition deadline, the results were evaluated on the same public and private test splits. The slightly stronger performance on the private leaderboard suggests that the model generalizes well beyond the data used during development.
-* **Robust and Leakage-Free Evaluation:** Internal performance remained highly consistent with external benchmark results. The 5-Fold Stratified Cross-Validation process produced a Bootstrap Mean Gini of 0.27669 (95% CI: [0.26927, 0.28374]), closely matching Kaggle scores. To ensure reliable evaluation, every preprocessing operation, including rare-category handling, was fitted exclusively on each training fold and never exposed to validation data.
-* **Well-Calibrated Risk Predictions:** Beyond ranking performance, the predicted probabilities were calibrated using Isotonic Regression so that estimated claim risks closely reflected observed outcomes. The model achieved a Bootstrap ECE of 0.00081 (95% CI: [0.00048, 0.00117]), a Fold-Averaged ECE of 0.00174, and a Brier Score of 0.03476, indicating highly reliable probability estimates.
-* **Data-Driven Feature Selection:** The decision to remove the 20 ps_calc_* features was based on empirical analysis rather than intuition alone. Exploratory data analysis revealed no meaningful relationship between these variables and the target: chi-square tests found no statistically significant associations (all p > 0.05), Cramér's V averaged only 0.0004, and a controlled ablation study showed virtually no performance difference when the features were included or excluded (ΔGini = +0.0005 with fully overlapping 95% confidence intervals).
 
-| Metric | Value |
-| :--- | :--- |
-| Kaggle Public Gini | 0.27772 |
-| Kaggle Private Gini | 0.28431 |
-| Internal CV Gini (Bootstrap Mean) | 0.27669 (95% CI: 0.26927–0.28374) |
-| PR-AUC | 0.06679 |
-| Brier Score | 0.03476 |
-| Expected Calibration Error (ECE) | 0.00081 (bootstrap) / 0.00174 (fold-averaged) |
+* **Robust and Leakage-Free Evaluation:** Internal performance remained highly consistent with external benchmark results. The 5-Fold Stratified Cross-Validation process produced a Bootstrap Mean Gini of 0.27669 (95% CI: \[0.26927, 0.28374\]), closely matching Kaggle scores. To ensure reliable evaluation, every preprocessing operation, including rare-category handling, was fitted exclusively on each training fold and never exposed to validation data.
+
+* **Well-Calibrated Risk Predictions:** Beyond ranking performance, the predicted probabilities were calibrated using Isotonic Regression so that estimated claim risks closely reflected observed outcomes. The model achieved a Bootstrap ECE of 0.00081 (95% CI: \[0.00048, 0.00117\]), a Fold-Averaged ECE of 0.00174, and a Brier Score of 0.03476, indicating highly reliable probability estimates.
+
+* **Data-Driven Feature Selection:** The decision to remove the 20 ps_calc\_\* features was based on empirical analysis rather than intuition alone. Exploratory data analysis revealed no meaningful relationship between these variables and the target: chi-square tests found no statistically significant associations (all p > 0.05), Cramér's V averaged only 0.0004, and a controlled ablation study showed virtually no performance difference when the features were included or excluded (ΔGini = +0.0005 with fully overlapping 95% confidence intervals).
+
+| Metric | Value | 
+| ----- | ----- | 
+| Kaggle Public Gini | 0.27772 | 
+| Kaggle Private Gini | 0.28431 | 
+| Internal CV Gini (Bootstrap Mean) | 0.27669 (95% CI: 0.26927–0.28374) | 
+| PR-AUC | 0.06679 | 
+| Brier Score | 0.03476 | 
+| Expected Calibration Error (ECE) | 0.00081 (bootstrap) / 0.00174 (fold-averaged) | 
 
 *Note: All internal metrics above are computed on out-of-fold (OOF) predictions from the final, leakage-free 5-fold pipeline described below.*
-
----
 
 ## Project Architecture & Execution Flow
 
@@ -31,84 +32,128 @@ The pipeline is modularized into dedicated Python scripts, enforcing clean separ
 *A second such module, **`preprocessing_utils.py`**, provides `fit_rare_map()` / `apply_rare_map()` — the fold-safe rare-category mapping helpers used by `02a_BaselineModels.py`, `02b_HyperparameterTuning.py`, and `03a_ModelTraining_Bootstrap.py`. **Fold-Safe Preprocessing:** `01_Preprocessing.py` used to learn this mapping (which categorical/ordinal values occur in <1% of rows) once, on the full training set, before any cross-validation split existed — meaning each validation fold's own rows had already helped decide which categories counted as "rare" for that fold. This is not target leakage (no label information is involved), but it is a mild preprocessing leakage that weakens the "fully leakage-free" claim. The mapping is now learned fresh, INSIDE each CV fold, from only that fold's training rows, and applied to that fold's validation rows (and, in `03a`, the test set scored by that fold's model). `01_Preprocessing.py` now only identifies and saves the *candidate* column list (`cols_for_rare.pkl`) — the actual thresholding happens fold-by-fold downstream. The same fit-inside-the-fold pattern should be followed for any future learned preprocessing step (imputation, scaling, target encoding, feature selection, etc.).*
 
 ### *0. Exploratory Data Analysis — Feature Removal Justification (optional, standalone)*
+
 * ***`00_EDA_ps_calc_justification.py`***
+
   * *Runs once, manually, on the raw `train.csv` — before `01_Preprocessing.py` drops any columns — and is intentionally excluded from `run_pipeline.py` since it is exploratory/evidentiary rather than part of the reproducible modeling path.*
+
   * *Two categories of columns are removed prior to feature engineering, for distinct reasons:*
+
     * ***Structural removal:*** *the `id` column is dropped as a non-informative row identifier, and `target` is separated out as the prediction label to prevent trivial leakage if retained among the features.*
+
     * ***Evidence-based removal:*** *the 20 `ps_calc_*` columns are dropped based on empirical analysis rather than assumption. This script produces that evidence:*
+
       1. *Chi-square independence test + Cramér's V effect size for each `ps_calc_*` column vs. `target` (mean Cramér's V = 0.0004, max = 0.0029; no column significant at p < 0.05).*
-      2. *Inter-correlation heatmap among `ps_calc_*` columns (mean \|r\| = 0.0009), indicating noise-like, uncorrelated structure.*
+
+      2. *Inter-correlation heatmap among `ps_calc_*` columns (mean |r| = 0.0009), indicating noise-like, uncorrelated structure.*
+
       3. *Target-conditioned distribution plots for a sample of `ps_calc_*` columns.*
+
       4. *A full-feature LightGBM importance ranking showing 17 of 20 `ps_calc_*` columns fall in the bottom half (mean rank 37.5 vs. 24.4 for retained features, out of 57 total).*
-      5. *A controlled ablation experiment: 5-fold CV Gini with vs. without `ps_calc_*`, with 200-iteration bootstrap 95% CIs. Result: Gini(with) = 0.26948 [0.26161, 0.27737] vs. Gini(without) = 0.26903 [0.26127, 0.27707] — fully overlapping CIs, i.e. no statistically detectable difference.*
+
+      5. *A controlled ablation experiment: 5-fold CV Gini with vs. without `ps_calc_*`, with 200-iteration bootstrap 95% CIs. Result: Gini(with) = 0.26948 \[0.26161, 0.27737\] vs. Gini(without) = 0.26903 \[0.26127, 0.27707\] — fully overlapping CIs, i.e. no statistically detectable difference.*
+
   * **Outputs Written To:** `eda_results/ps_calc_chi2_cramers_v.csv`, `eda_results/ps_calc_correlation_heatmap.png`, `eda_results/ps_calc_target_conditioned_distributions.png`, `eda_results/full_feature_importance_with_ps_calc.csv`, `eda_results/full_feature_importance_plot.png`, `eda_results/ps_calc_ablation_gini_comparison.csv`
 
 ### 1. Data Engineering & Pipeline Safety
+
 * **`01_Preprocessing.py`**
+
   * Handles missing value imputation strategies customized for high-cardinality categorical data and continuous risk indices.
+
   * Drops the 20 noisy `ps_calc` columns *(justified empirically in Phase 0 above)* and casts categorical variables to Pandas `category` dtype.
+
   * Identifies the candidate rare-category columns and saves them as a list (`cols_for_rare.pkl`) but does **not** threshold them here — see the "Fold-Safe Preprocessing" note above.
+
   * Outputs `X_preprocessed.csv`, `y_preprocessed.csv`, `test_preprocessed.csv`, `metadata.pkl`, `categorical_cols.pkl`, `cols_for_rare.pkl`, and copies convenience duplicates to the root directory for later phases.
 
 ### 2. Baseline Construction & Optimization
+
 * **`02a_BaselineModels.py`**
+
   * Benchmarks LightGBM, Random Forest, and XGBoost out-of-the-box, using ALL preprocessed features (no upfront feature-selection step), via 5-Fold Stratified Cross-Validation.
+
   * This "all-features" design deliberately avoids a feature-selection-leakage pitfall that would occur if a Top-N feature list were derived from the full dataset and then reused across CV folds.
+
   * Reports Gini, PR-AUC, and Recall@1% per fold plus a Bootstrap 95% CI per model.
-  * Current baseline result: LightGBM Gini 0.27946 [0.2714–0.2866], Random Forest 0.24895 [0.2413–0.2556], XGBoost 0.27443 [0.2668–0.2819].
+
+  * Current baseline result: LightGBM Gini 0.27946 \[0.2714–0.2866\], Random Forest 0.24896 \[0.2415–0.2556\], XGBoost 0.27604 \[0.2683–0.2837\].
+
   * Saves `model_results/baseline_metrics_backup.pkl` for later use in the ablation study.
+
   * (A separate, optional descriptive-only feature-importance script exists for exploratory reporting but is not part of the active `run_pipeline.py` sequence, since its output is not used to filter or select features downstream.)
+
 * **`02b_HyperparameterTuning.py`**
+
   * Executes a 30-trial Bayesian hyperparameter search via Optuna (TPE sampler), optimizing `num_leaves`, `max_depth`, `min_child_samples`, `subsample`, `colsample_bytree`, `reg_alpha`, `reg_lambda`, and `learning_rate`, using 5-Fold Stratified CV with early stopping.
+
   * Current best result: CV Gini 0.28245, with an average early-stopped tree count of 518 (search upper bound: n_estimators=1200).
+
   * Also records `n_estimators_effective` — the average early-stopped tree count for the best trial — so Phase 3a can train the final production model with a tree count consistent with the reported tuning Gini, instead of the (larger) search-space upper bound.
+
   * **Outputs Written To:** `model_results/best_lgbm_params.pkl`
 
 ### 3. Robust Training, Validation, Interpretability & Business Alignment
+
 * **`03a_ModelTraining_Bootstrap.py`**
+
   * Trains the tuned LightGBM model across 5 Stratified folds using the Optuna-optimized hyperparameters.
+
   * Integrates a **fold-safe 80/20 calibration split** (train → fit/calibration subsets) with **Isotonic Regression** to calibrate raw classification scores into well-calibrated probabilities, preventing calibration leakage into the validation fold.
+
   * Executes a **1,000-iteration Bootstrap Analysis** on out-of-fold predictions to calculate empirical confidence intervals for Gini, Brier, and ECE.
+
   * Generates a 3-step ablation study (Baseline → Optuna-Tuned → Tuned+Calibrated) to quantify the contribution of each modeling stage. Current result:
 
-    | Experiment Step | Gini Index | Δ vs. Baseline |
-    | :--- | :--- | :--- |
-    | 1. LightGBM Baseline (Default Params) | 0.27946 | +0.00000 |
-    | 2. LightGBM Optimized (Optuna Tuning, fold-safe calib. split) | 0.27854 | -0.00092 |
-    | 3. LightGBM Final (Tuned + Calibration) | 0.27647 | -0.00299 |
+    | Experiment Step | Gini Index | Δ vs. Baseline | 
+    | ----- | ----- | ----- | 
+    | 1\. LightGBM Baseline (Default Params) | 0.27946 | +0.00000 | 
+    | 2\. LightGBM Optimized (Optuna Tuning, fold-safe calib. split) | 0.27854 | \-0.00092 | 
+    | 3\. LightGBM Final (Tuned + Calibration) | 0.27647 | \-0.00299 | 
 
-    Note: Optuna's own tuning-time CV Gini (0.28245) is measured without the calibration carve-out. The small apparent dip in step 2 above reflects the reduced training data (~64% vs. ~80% of each outer-training fold) introduced by reserving a calibration subset, not a failure of tuning itself — the trade-off is made deliberately to keep calibration leakage-free.
+    Note: Optuna's own tuning-time CV Gini (0.28245) is measured without the calibration carve-out. The small apparent dip in step 2 above reflects the reduced training data (\~64% vs. \~80% of each outer-training fold) introduced by reserving a calibration subset, not a failure of tuning itself — the trade-off is made deliberately to keep calibration leakage-free.
+
   * Trains the **final production model** on the complete training dataset using `n_estimators=518` (Optuna's early-stopped average) and saves it for downstream explainability analysis and deployment.
-  * Generates the Kaggle submission file and the reliability (calibration) diagram.
-  * Saves **`model_results/calibrated_predictor.pkl`** — a self-contained bundle (`{fold_models, feature_names, categorical_features}`, where each entry in `fold_models` carries its own `{model, iso_reg, rare_map}`) that is the actual predictor behind `oof_preds_calibrated.npy` and `submission_final.csv`: score new data by averaging each fold model's `predict_proba()` through that fold's own isotonic calibrator, after applying that fold's own rare-category map (see `predict_calibrated_ensemble()` in the script). This exists because `final_model.pkl` (below) is a *single, uncalibrated* LightGBM model kept only so `03b_SHAP_Interpretability.py` has a plain tree model for TreeSHAP — its `.predict_proba()` does **not** reproduce the calibrated numbers reported elsewhere in this README. **Use `calibrated_predictor.pkl` for scoring, validation reproduction, or audits; use `final_model.pkl` only for SHAP/interpretability.**
-  * **Outputs Written To:** `model_results/final_model.pkl`, `model_results/calibrated_predictor.pkl`, `model_results/fold_models.pkl`, `model_results/oof_preds_calibrated.npy`, `model_results/test_preds_calibrated.npy`, `model_results/metrics_summary.pkl`, `model_results/fold_results.csv`, `model_results/ablation_study.csv`, `model_results/submission_final.csv`, `model_results/lgbm_reliability_diagram.png`
-* **`03b_SHAP_Interpretability.py`**
-  * Loads the final production model and reproduces its exact feature representation (categorical casting, feature order) to guarantee a faithful explanation.
-  * Utilizes **TreeSHAP (SHAP Explainer)** on a 1,000-row random sample to uncover global and local feature behaviors.
-  * Generates summary (dot/bar), dependence, force, and waterfall plots, plus a ranked feature-importance table.
-  * Top drivers of predicted risk in the current model: `ps_ind_05_cat`, `ps_car_07_cat`, `ps_car_09_cat`, `ps_car_13`, `ps_car_01_cat`.
-  * **Outputs Written To:** `model_results/shap_analysis/` (summary plots, dependence plots, force/waterfall plots, `shap_feature_importance.csv`, raw SHAP values)
-* **`03c_Business_Impact_Simulation.py`**
-  * Translates statistical metrics into financial terms. Simulates expected savings across a sensitivity grid of intervention costs, claim severities, and targeting thresholds (top 0.5%, 1%, 2%).
-  * **This is a sensitivity simulation under explicit assumptions, not a validated business forecast.** Two illustrative-placeholder knobs — `effectiveness` (default 0.25: only a fraction of claims are actually preventable once acted on) and `uptake_rate` (default 0.70: not every contacted customer accepts the offered action) — discount the naive "every intervention works, everyone cooperates" savings figure before it is reported. Both must be recalibrated against a real pilot program or actuarial data before the dollar figures are used for an actual budget decision. For comparison, the output also reports the undiscounted "naive" scenario (`total_expected_saving_naive`, `ROI_naive`) side by side with the realistic one, so the size of the gap between "clean scenario calculator" and "credible estimate" stays visible rather than hidden.
-  * Performs cost-benefit analysis to help actuarial teams identify profitable intervention thresholds under different risk-tolerance assumptions.
-  * **Outputs Written To:** `model_results/business_impact_sensitivity.csv`, `model_results/business_impact_heatmaps/`
 
----
+  * Generates the Kaggle submission file and the reliability (calibration) diagram.
+
+  * Saves **`model_results/calibrated_predictor.pkl`** — a self-contained bundle (`{fold_models, feature_names, categorical_features}`, where each entry in `fold_models` carries its own `{model, iso_reg, rare_map}`) that is the actual predictor behind `oof_preds_calibrated.npy` and `submission_final.csv`: score new data by averaging each fold model's `predict_proba()` through that fold's own isotonic calibrator, after applying that fold's own rare-category map (see `predict_calibrated_ensemble()` in the script). This exists because `final_model.pkl` (below) is a *single, uncalibrated* LightGBM model kept only so `03b_SHAP_Interpretability.py` has a plain tree model for TreeSHAP — its `.predict_proba()` does **not** reproduce the calibrated numbers reported elsewhere in this README. **Use `calibrated_predictor.pkl` for scoring, validation reproduction, or audits; use `final_model.pkl` only for SHAP/interpretability.**
+
+  * **Outputs Written To:** `model_results/final_model.pkl`, `model_results/calibrated_predictor.pkl`, `model_results/fold_models.pkl`, `model_results/oof_preds_calibrated.npy`, `model_results/test_preds_calibrated.npy`, `model_results/metrics_summary.pkl`, `model_results/fold_results.csv`, `model_results/ablation_study.csv`, `model_results/submission_final.csv`, `model_results/lgbm_reliability_diagram.png`
+
+* **`03b_SHAP_Interpretability.py`**
+
+  * Loads the final production model and reproduces its exact feature representation (categorical casting, feature order) to guarantee a faithful explanation.
+
+  * Utilizes **TreeSHAP (SHAP Explainer)** on a 1,000-row random sample to uncover global and local feature behaviors.
+
+  * Generates summary (dot/bar), dependence, force, and waterfall plots, plus a ranked feature-importance table.
+
+  * Top drivers of predicted risk in the current model: `ps_car_13`, `ps_ind_03`, `ps_ind_05_cat`, `ps_ind_15`, `ps_reg_03`.
+
+  * **Outputs Written To:** `model_results/shap_analysis/` (summary plots, dependence plots, force/waterfall plots, `shap_feature_importance.csv`, raw SHAP values)
+
+* **`03c_Business_Impact_Simulation.py`**
+
+  * Translates statistical metrics into financial terms. Simulates expected savings across a sensitivity grid of intervention costs, claim severities, and targeting thresholds (top 0.5%, 1%, 2%).
+
+  * **This is a sensitivity simulation under explicit assumptions, not a validated business forecast.** Two illustrative-placeholder knobs — `effectiveness` (default 0.25: only a fraction of claims are actually preventable once acted on) and `uptake_rate` (default 0.70: not every contacted customer accepts the offered action) — discount the naive "every intervention works, everyone cooperates" savings figure before it is reported. Both must be recalibrated against a real pilot program or actuarial data before the dollar figures are used for an actual budget decision. For comparison, the output also reports the undiscounted "naive" scenario (`total_expected_saving_naive`, `ROI_naive`) side by side with the realistic one, so the size of the gap between "clean scenario calculator" and "credible estimate" stays visible rather than hidden.
+
+  * Performs cost-benefit analysis to help actuarial teams identify profitable intervention thresholds under different risk-tolerance assumptions.
+
+  * **Outputs Written To:** `model_results/business_impact_sensitivity.csv`, `model_results/business_impact_heatmaps/`
 
 ## Technical Insight: Reliability & Calibration
 
-The pipeline achieves a well-calibrated final model, with bootstrap-estimated ECE of 0.00081 (95% CI: [0.00048, 0.00117]) using Isotonic Regression on a fold-safe calibration split. As is typical with isotonic calibration, this comes with a small, expected reduction in raw discrimination (Gini) relative to the uncalibrated model, since isotonic regression's step-function output introduces prediction ties that slightly reduce ranking-based metrics like AUC/Gini while substantially improving probability accuracy.
+The pipeline achieves a well-calibrated final model, with bootstrap-estimated ECE of 0.00081 (95% CI: \[0.00048, 0.00117\]) using Isotonic Regression on a fold-safe calibration split. As is typical with isotonic calibration, this comes with a small, expected reduction in raw discrimination (Gini) relative to the uncalibrated model, since isotonic regression's step-function output introduces prediction ties that slightly reduce ranking-based metrics like AUC/Gini while substantially improving probability accuracy.
 
-*Note: the ECE figures above reflect two corrections made to the pipeline. First, a fix to `calculate_ece()`: the metric previously mixed quantile-based bins (for the accuracy/confidence values) with equal-width bin weights, which understated ECE by roughly 2.5–4x; the corrected implementation bins consistently by quantile throughout and now lives in a single shared module, `metrics.py`, imported by every script that needs it (see directory structure below). Second, the fold-safe rare-category mapping fix described above, which slightly changes every downstream number (Gini, ECE, hyperparameters) since each fold's training data is no longer identical to what it was before. The model's calibration quality itself remains excellent — an ECE around 0.0008–0.0017 is well below typical "well-calibrated" thresholds of ~0.05.*
-
----
+*Note: the ECE figures above reflect two corrections made to the pipeline. First, a fix to `calculate_ece()`: the metric previously mixed quantile-based bins (for the accuracy/confidence values) with equal-width bin weights, which understated ECE by roughly 2.5–4x; the corrected implementation bins consistently by quantile throughout and now lives in a single shared module, `metrics.py`, imported by every script that needs it (see directory structure below). Second, the fold-safe rare-category mapping fix described above, which slightly changes every downstream number (Gini, ECE, hyperparameters) since each fold's training data is no longer identical to what it was before. The model's calibration quality itself remains excellent — an ECE around 0.0008–0.0017 is well below typical "well-calibrated" thresholds of \~0.05.*
 
 ## Project Directory Structure & File Pathways
 
 The pipeline relies on a structured workspace to pass preprocessed data and models between scripts sequentially. Ensure the following paths are maintained:
 
-```text
+```
 │── train.csv                         # Original raw training data
 │── test.csv                          # Original raw test data
 ├── eda_results/                      # Generated by the optional Phase 0 EDA script
@@ -156,67 +201,89 @@ The pipeline relies on a structured workspace to pass preprocessed data and mode
 │                                       #   actual rare-value thresholding happens per CV fold downstream
 ├── README.md
 └── model_results/submission_final.csv   # Kaggle submission file
+
 ```
 
 *Note: File and folder names above reflect the pipeline's current state, as run via `run_pipeline.py`. The `eda_results/` folder and `00_EDA_ps_calc_justification.py` are produced by the optional Phase 0 script described above and are not created by `run_pipeline.py` itself.*
 
----
-
 ## Getting Started & Execution Order
 
 ### 0. Python Version
+
 This project targets **Python 3.12** (developed and tested on 3.12.10). This isn't an arbitrary choice: the pinned versions in `requirements.txt` (e.g. `numpy==1.26.4`) predate Python 3.14 and have no pre-built wheel for it, so `pip install` on 3.14 fails or falls back to a source build that typically fails without a C/C++ compiler. If you're on a newer Python (3.13+), either install Python 3.12 alongside it and create a virtual environment with it (`py -3.12 -m venv venv` on Windows, then `.\venv\Scripts\activate`), or update the pins in `requirements.txt` to versions with wheels for your Python version and re-verify the pipeline still reproduces the metrics reported here.
 
 ### 1. Installation
+
 Install pinned production dependencies from `requirements.txt` (Python 3.12 environment — see above):
-```bash
-pip install -r requirements.txt
+
 ```
+pip install -r requirements.txt
+
+```
+
 Versions are pinned deliberately, not left as a loose `pip install pandas numpy ...` list: this pipeline's core outputs are pickled models (`final_model.pkl`, `calibrated_predictor.pkl`, `fold_models.pkl`) and reported metrics (Gini, ECE, Brier) whose exact values — and in the case of pickles, whose very ability to load — depend on the library versions used to produce them. scikit-learn, LightGBM, XGBoost, and SHAP have all changed default behavior or pickle compatibility across versions before. If you deliberately upgrade a pinned version, re-run the pipeline and confirm the metrics in this README still hold.
 
 To also run the test suite (see "Testing" below), additionally install:
-```bash
+
+```
 pip install -r requirements-dev.txt
+
 ```
 
 ### 2. *(Optional) Feature Removal Justification*
+
 *Run once, manually, before the main pipeline, to reproduce the statistical evidence behind the `ps_calc_*` removal decision (see Key Achievements above):*
-```bash
+
+```
 python "00_EDA_ps_calc_justification.py"
+
 ```
 
 ### 3. Running the Pipeline
+
 Run the full pipeline via **`run_pipeline.py`**, or execute the stages individually in order:
-```bash
+
+```
 python 01_Preprocessing.py
 python 02a_BaselineModels.py
 python 02b_HyperparameterTuning.py
 python 03a_ModelTraining_Bootstrap.py
 python 03b_SHAP_Interpretability.py
 python 03c_Business_Impact_Simulation.py
+
 ```
 
 ### 4. Testing (optional, but recommended after any code change)
-A small `pytest` suite in `tests/` covers a handful of fast, high-value sanity checks — it is not a substitute for re-running the full pipeline, but it catches obvious regressions in seconds instead of the ~40–50 minutes a full run takes:
-```bash
+
+A small `pytest` suite in `tests/` covers a handful of fast, high-value sanity checks — it is not a substitute for re-running the full pipeline, but it catches obvious regressions in seconds instead of the \~40–50 minutes a full run takes:
+
+```
 pip install -r requirements.txt -r requirements-dev.txt
 pytest
+
 ```
+
 What it checks:
-- **Preprocessing consistency:** `X_preprocessed.csv` and `test_preprocessed.csv` have identical columns, in identical order.
-- **Prediction validity:** every value in `test_preds_calibrated.npy` / `oof_preds_calibrated.npy` is a finite number in `[0, 1]`.
-- **`calculate_ece()` correctness:** returns exactly 0 for a toy case of perfect predictions, and a large value for a toy case of confidently wrong ones (the second check guards specifically against the quantile/equal-width bin-mismatch bug described earlier in this README).
-- **`load_predictions()` error handling:** raises a clear `FileNotFoundError` — naming the missing path and pointing at Phase 3a — rather than letting a confusing low-level error surface instead.
+
+* **Preprocessing consistency:** `X_preprocessed.csv` and `test_preprocessed.csv` have identical columns, in identical order.
+
+* **Prediction validity:** every value in `test_preds_calibrated.npy` / `oof_preds_calibrated.npy` is a finite number in `[0, 1]`.
+
+* **`calculate_ece()` correctness:** returns exactly 0 for a toy case of perfect predictions, and a large value for a toy case of confidently wrong ones (the second check guards specifically against the quantile/equal-width bin-mismatch bug described earlier in this README).
+
+* **`load_predictions()` error handling:** raises a clear `FileNotFoundError` — naming the missing path and pointing at Phase 3a — rather than letting a confusing low-level error surface instead.
 
 The two artifact-based checks (preprocessing columns, prediction validity) `pytest.skip()` with an explanatory message if the relevant pipeline stage hasn't been run yet, rather than failing — they check the pipeline's actual output, not a reimplementation of its logic, so they're only meaningful once real files exist to check.
 
----
-
 ## Evaluation Metrics
+
 The pipeline monitors performance across three critical layers:
-1.  **Discrimination:** Normalized Gini Coefficient & ROC-AUC.
-2.  **Calibration:** Expected Calibration Error (ECE) & Brier Score Loss (ensuring predicted probabilities match actual frequencies).
-3.  **Business Utility:** Recall@K% (capturing the maximum amount of high-risk claims within the top 0.5%, 1%, and 2% risk tiers).
+
+1. **Discrimination:** Normalized Gini Coefficient & ROC-AUC.
+
+2. **Calibration:** Expected Calibration Error (ECE) & Brier Score Loss (ensuring predicted probabilities match actual frequencies).
+
+3. **Business Utility:** Recall@K% (capturing the maximum amount of high-risk claims within the top 0.5%, 1%, and 2% risk tiers).
 
 4. Model Evolution (Ablation): Baseline → Optuna-Tuned → Calibrated, tracked end-to-end in `model_results/ablation_study.csv` to attribute performance changes to each pipeline stage.
 

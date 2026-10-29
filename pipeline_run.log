@@ -770,3 +770,29 @@ Business impact sensitivity analysis complete!
 [2026-09-26 14:40:40] ======================================================================
 [2026-09-26 14:40:40] PIPELINE RUN COMPLETE — total elapsed: 41.3 minutes
 [2026-09-26 14:40:40] ======================================================================
+[2026-10-28 21:08:58] ======================================================================
+[2026-10-28 21:08:58] PIPELINE RUN START — 6 stage(s) scheduled
+[2026-10-28 21:08:58] ======================================================================
+[2026-10-28 21:08:58] ▶️  STAGE START: Preprocessing (01_Preprocessing.py) — Data cleaning, encoding, artifact generation
+[2026-10-28 21:09:14] STAGE COMPLETE: Preprocessing in 15.9s
+[2026-10-28 21:09:14] ▶️  STAGE START: Baseline Models (02a_BaselineModels.py) — Baseline models: Random Forest, LGBM, XGBoost
+[2026-10-28 21:23:33] STAGE COMPLETE: Baseline Models in 858.8s
+[2026-10-28 21:23:33] ▶️  STAGE START: Hyperparameter Tuning (02b_HyperparameterTuning.py) — Optuna/grid-search hyperparameter sweep
+[2026-10-29 20:04:56] ======================================================================
+[2026-10-29 20:04:56] PIPELINE RUN START — 6 stage(s) scheduled
+[2026-10-29 20:04:56] ======================================================================
+[2026-10-29 20:04:56] ▶️  STAGE START: Preprocessing (01_Preprocessing.py) — Data cleaning, encoding, artifact generation
+[2026-10-29 20:05:12] STAGE COMPLETE: Preprocessing in 16.8s
+[2026-10-29 20:05:12] ▶️  STAGE START: Baseline Models (02a_BaselineModels.py) — Baseline models: Random Forest, LGBM, XGBoost
+[2026-10-29 20:13:36] STAGE COMPLETE: Baseline Models in 503.6s
+[2026-10-29 20:13:36] ▶️  STAGE START: Hyperparameter Tuning (02b_HyperparameterTuning.py) — Optuna/grid-search hyperparameter sweep
+[2026-10-29 20:57:35] STAGE COMPLETE: Hyperparameter Tuning in 2638.9s
+[2026-10-29 20:57:35] ▶️  STAGE START: Training + Calibration (03a_ModelTraining_Bootstrap.py) — Final model, isotonic calibration, bootstrap CIs
+[2026-10-29 21:04:30] STAGE COMPLETE: Training + Calibration in 415.2s
+[2026-10-29 21:04:30] ▶️  STAGE START: SHAP Interpretability (03b_SHAP_Interpretability.py) — TreeSHAP global/local explainability
+[2026-10-29 21:05:00] STAGE COMPLETE: SHAP Interpretability in 29.7s
+[2026-10-29 21:05:00] ▶️  STAGE START: Business Impact Simulation (03c_Business_Impact_Simulation.py) — Threshold/cost-benefit simulation
+[2026-10-29 21:05:05] STAGE COMPLETE: Business Impact Simulation in 4.9s
+[2026-10-29 21:05:05] ======================================================================
+[2026-10-29 21:05:05] PIPELINE RUN COMPLETE — total elapsed: 60.2 minutes
+[2026-10-29 21:05:05] ======================================================================
